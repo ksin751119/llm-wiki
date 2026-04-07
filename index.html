@@ -36,17 +36,116 @@
 
 /* === RESET === */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html {
+  height: 100%;
+  overflow: hidden;
+}
 body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.7;
-  overflow-x: hidden;
+  overflow: hidden;
+  height: 100%;
   -webkit-font-smoothing: antialiased;
-  -webkit-overflow-scrolling: touch;
 }
 a { color: var(--accent); text-decoration: none; }
+
+/* === SLIDE SYSTEM === */
+.slides {
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+.slide {
+  position: absolute;
+  inset: 0;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.8s var(--ease);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.slide__inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4rem 0;
+  min-height: 0;
+}
+/* Slides with lots of content: scroll internally */
+.slide--scrollable .slide__inner {
+  justify-content: flex-start;
+  padding: 6rem 0 4rem;
+}
+
+/* === SLIDE INDICATOR === */
+.slide-nav {
+  position: fixed;
+  right: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 200;
+}
+.slide-nav__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-ghost);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.4s var(--ease), transform 0.4s var(--ease);
+}
+.slide-nav__dot.active {
+  background: var(--accent);
+  transform: scale(1.5);
+}
+.slide-nav__dot:hover {
+  background: var(--text-muted);
+}
+
+/* === SLIDE COUNTER === */
+.slide-counter {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-ghost);
+  z-index: 200;
+  letter-spacing: 0.05em;
+}
+.slide-counter__current { color: var(--accent); }
+
+/* === KEYBOARD HINT === */
+.key-hint {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-ghost);
+  z-index: 200;
+  letter-spacing: 0.08em;
+  opacity: 1;
+  transition: opacity 1s var(--ease);
+}
+.key-hint.hidden { opacity: 0; }
 
 /* === GRAIN OVERLAY === */
 body::after {
@@ -60,46 +159,7 @@ body::after {
   background-size: 256px 256px;
 }
 
-/* === PROGRESS LINE === */
-.progress-line {
-  position: fixed;
-  left: 2rem;
-  top: 0;
-  width: 1px;
-  height: 100vh;
-  background: var(--border);
-  z-index: 100;
-  pointer-events: none;
-}
-.progress-line__fill {
-  width: 1px;
-  height: 0%;
-  background: var(--accent);
-}
-.progress-line__markers {
-  position: fixed;
-  left: 1.2rem;
-  top: 0;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-evenly;
-  z-index: 100;
-  pointer-events: none;
-}
-.progress-marker {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  color: var(--text-ghost);
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  transform: rotate(180deg);
-  transition: color 0.5s var(--ease);
-  pointer-events: auto;
-  cursor: pointer;
-}
-.progress-marker.active { color: var(--accent); }
+/* (progress line removed — using slide nav instead) */
 
 /* === SECTION HEADER === */
 .section-label {
@@ -130,7 +190,7 @@ body::after {
 /* ==================== */
 .hero {
   position: relative;
-  min-height: 100vh;
+  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -233,14 +293,7 @@ body::after {
 .architecture {
   width: var(--corridor-mid);
   margin: 0 auto;
-  padding: var(--space-xl) 0;
-  transform: translateZ(-100px) translateY(30px);
-  opacity: 0;
-  transition: all 2s cubic-bezier(0.25, 0.1, 0.25, 1);
-}
-.architecture.visible {
-  transform: translateZ(0) translateY(0);
-  opacity: 1;
+  padding: 0;
 }
 .architecture__grid {
   display: grid;
@@ -250,8 +303,6 @@ body::after {
   margin-top: var(--space-md);
 }
 .architecture__diagram {
-  position: sticky;
-  top: 15vh;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -400,11 +451,8 @@ body::after {
 .ingest {
   width: var(--corridor-narrow);
   margin: 0 auto;
-  padding: var(--space-xl) 0;
-  clip-path: inset(0 100% 0 0);
-  transition: clip-path 1.2s ease-in-out;
+  padding: 0;
 }
-.ingest.visible { clip-path: inset(0 0 0 0); }
 
 .ingest__flow {
   display: grid;
@@ -488,7 +536,7 @@ body::after {
 .pivot {
   width: var(--corridor-narrow);
   margin: 0 auto;
-  padding: var(--space-xl) 0;
+  padding: 0;
 }
 .pivot__split {
   display: grid;
@@ -500,14 +548,6 @@ body::after {
   padding: 2rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  clip-path: inset(0 50% 0 0);
-  transition: clip-path 1.2s var(--ease);
-}
-.pivot__side:last-child {
-  clip-path: inset(0 0 0 50%);
-}
-.pivot.visible .pivot__side {
-  clip-path: inset(0);
 }
 .pivot__side-label {
   font-family: var(--font-mono);
@@ -568,7 +608,7 @@ body::after {
 .evidence {
   width: var(--corridor-narrow);
   margin: 0 auto;
-  padding: var(--space-xl) 0;
+  padding: 0;
 }
 .evidence__table-wrap {
   margin-top: var(--space-md);
@@ -590,17 +630,7 @@ body::after {
 .evidence__table thead th:nth-child(1) { color: var(--text-ghost); width: 25%; }
 .evidence__table thead th:nth-child(2) { color: var(--fog-blue); }
 .evidence__table thead th:nth-child(3) { color: var(--accent); }
-.evidence__table tbody tr {
-  opacity: 0;
-  transform: translateY(16px);
-  transition: opacity 0.4s ease, transform 0.4s ease;
-}
-.evidence.visible .evidence__table tbody tr { opacity: 1; transform: translateY(0); }
-.evidence.visible .evidence__table tbody tr:nth-child(1) { transition-delay: 0.05s; }
-.evidence.visible .evidence__table tbody tr:nth-child(2) { transition-delay: 0.12s; }
-.evidence.visible .evidence__table tbody tr:nth-child(3) { transition-delay: 0.19s; }
-.evidence.visible .evidence__table tbody tr:nth-child(4) { transition-delay: 0.26s; }
-.evidence.visible .evidence__table tbody tr:nth-child(5) { transition-delay: 0.33s; }
+/* table rows visible by default in slide mode */
 .evidence__table td {
   padding: 1rem 1.5rem;
   font-size: 14px;
@@ -646,12 +676,8 @@ body::after {
 .toolchain {
   width: var(--corridor-mid);
   margin: 0 auto;
-  padding: var(--space-xl) 0;
-  transform: scale(0.88);
-  opacity: 0;
-  transition: all 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  padding: 0;
 }
-.toolchain.visible { transform: scale(1); opacity: 1; }
 
 .toolchain__constellation {
   display: grid;
@@ -749,11 +775,8 @@ body::after {
 .invitation {
   width: var(--corridor-wide);
   margin: 0 auto;
-  padding: var(--space-xl) 0;
-  opacity: 0;
-  transition: opacity 2s var(--ease);
+  padding: 0;
 }
-.invitation.visible { opacity: 1; }
 
 .invitation__steps {
   max-width: 580px;
@@ -814,20 +837,16 @@ body::after {
 /* SCENE 8 — THE LOOP       */
 /* ======================== */
 .loop {
-  min-height: 70vh;
+  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
   position: relative;
-  padding: var(--space-xl) 5%;
-  filter: blur(20px);
-  transform: scale(1.05);
-  opacity: 0;
-  transition: all 1.2s ease;
+  padding: 2rem 5%;
 }
-.loop.visible { filter: blur(0); transform: scale(1); opacity: 1; }
+/* loop entrance handled by slide transition */
 
 .loop__fog {
   position: absolute;
@@ -874,9 +893,15 @@ body::after {
 /* ======================== */
 /* SCENE 9 — FOOTER         */
 /* ======================== */
+.farewell-slide {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .farewell {
-  padding: var(--space-md) 5% var(--space-lg);
   text-align: center;
+  padding: 2rem;
 }
 .farewell__line {
   width: 40px;
@@ -903,7 +928,9 @@ body::after {
     --space-xl: 6rem;
     --space-lg: 4rem;
   }
-  .progress-line, .progress-line__markers { display: none; }
+  .slide-nav { right: 1rem; }
+  .slide-counter { right: 1rem; bottom: 1rem; }
+  .key-hint { display: none; }
   .architecture__grid { grid-template-columns: 1fr; }
   .architecture__diagram { position: relative; top: auto; }
   .ingest__flow { grid-template-columns: 1fr; }
@@ -924,29 +951,23 @@ body::after {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
   }
+  .slide { transition: none; }
   .hero__title, .hero__subtitle, .hero__scroll-hint { opacity: 1; }
-  .architecture, .ingest, .toolchain, .invitation, .loop { opacity: 1; transform: none; filter: none; }
-  .ingest { clip-path: none; }
-  .pivot__side { clip-path: none; }
-  .evidence__table tbody tr { opacity: 1; transform: none; }
 }
 </style>
 </head>
 <body>
 
-<!-- PROGRESS LINE -->
-<div class="progress-line"><div class="progress-line__fill" id="progressFill"></div></div>
-<nav class="progress-line__markers" aria-label="章節導覽">
-  <a class="progress-marker" href="#hero">總覽</a>
-  <a class="progress-marker" href="#architecture">架構</a>
-  <a class="progress-marker" href="#ingest">Ingest</a>
-  <a class="progress-marker" href="#pivot">Query</a>
-  <a class="progress-marker" href="#evidence">設計</a>
-  <a class="progress-marker" href="#toolchain">工具</a>
-  <a class="progress-marker" href="#invitation">開始</a>
-</nav>
+<!-- SLIDE NAV DOTS -->
+<nav class="slide-nav" id="slideNav" aria-label="章節導覽"></nav>
+<div class="slide-counter"><span class="slide-counter__current" id="counterCurrent">1</span> / <span id="counterTotal">9</span></div>
+<div class="key-hint" id="keyHint">↑ ↓ 切換頁面</div>
 
-<!-- SCENE 1: HERO -->
+<!-- SLIDES CONTAINER -->
+<div class="slides" id="slides">
+
+<!-- SLIDE 1: HERO -->
+<div class="slide active" data-slide="0">
 <section class="hero" id="hero" data-scene="1">
   <div class="hero__fog-layer hero__fog-1"></div>
   <div class="hero__fog-layer hero__fog-2"></div>
@@ -957,10 +978,13 @@ body::after {
     <h1 class="hero__title">如果 LLM<br>幫你維護知識庫？</h1>
     <p class="hero__subtitle">知識編譯一次，持續更新。<br>查詢時只需讀取<em>已編譯的成果</em>。</p>
   </div>
-  <div class="hero__scroll-hint">SCROLL</div>
+  <div class="hero__scroll-hint">↓</div>
 </section>
+</div>
 
-<!-- SCENE 2: ARCHITECTURE -->
+<!-- SLIDE 2: ARCHITECTURE -->
+<div class="slide slide--scrollable" data-slide="1">
+<div class="slide__inner">
 <section class="architecture" id="architecture" data-scene="2">
   <div class="section-label">第二章 — 架構全景</div>
   <h2 class="section-title">三層架構</h2>
@@ -1033,8 +1057,11 @@ body::after {
     </div>
   </div>
 </section>
+</div></div>
 
-<!-- SCENE 3: INGEST -->
+<!-- SLIDE 3: INGEST -->
+<div class="slide slide--scrollable" data-slide="2">
+<div class="slide__inner">
 <section class="ingest" id="ingest" data-scene="3">
   <div class="section-label">第四章 — 核心流程</div>
   <h2 class="section-title">Ingest：知識的編譯</h2>
@@ -1085,8 +1112,11 @@ body::after {
     </ul>
   </div>
 </section>
+</div></div>
 
-<!-- SCENE 4: QUERY & LINT -->
+<!-- SLIDE 4: QUERY & LINT -->
+<div class="slide slide--scrollable" data-slide="3">
+<div class="slide__inner">
 <section class="pivot" id="pivot" data-scene="4">
   <div class="section-label">第五章 — 進階流程</div>
   <h2 class="section-title">Query 與 Lint</h2>
@@ -1118,8 +1148,11 @@ body::after {
     <div class="pivot__pullquote-label">知識複利</div>
   </div>
 </section>
+</div></div>
 
-<!-- SCENE 5: EVIDENCE WALL -->
+<!-- SLIDE 5: EVIDENCE WALL -->
+<div class="slide slide--scrollable" data-slide="4">
+<div class="slide__inner">
 <section class="evidence" id="evidence" data-scene="5">
   <div class="section-label">第六章 — 關鍵設計決策</div>
   <h2 class="section-title">為什麼不是 RAG？</h2>
@@ -1149,8 +1182,11 @@ body::after {
     <p class="evidence__memex-attr">— Vannevar Bush 的 Memex 願景，由 LLM 實現</p>
   </div>
 </section>
+</div></div>
 
-<!-- SCENE 6: TOOLCHAIN -->
+<!-- SLIDE 6: TOOLCHAIN -->
+<div class="slide slide--scrollable" data-slide="5">
+<div class="slide__inner">
 <section class="toolchain" id="toolchain" data-scene="6">
   <div class="section-label">第七章 — 工具鏈</div>
   <h2 class="section-title">生態系統</h2>
@@ -1213,8 +1249,11 @@ body::after {
     </div>
   </div>
 </section>
+</div></div>
 
-<!-- SCENE 7: INVITATION -->
+<!-- SLIDE 7: INVITATION -->
+<div class="slide slide--scrollable" data-slide="6">
+<div class="slide__inner">
 <section class="invitation" id="invitation" data-scene="7">
   <div class="section-label" style="text-align:center">第八章 — 實踐指南</div>
   <h2 class="section-title" style="text-align:center">如何開始</h2>
@@ -1262,98 +1301,183 @@ body::after {
     <p class="invitation__coda-sub">一切都是可選的 — 從最小可行 wiki 開始</p>
   </div>
 </section>
+</div></div>
 
-<!-- SCENE 8: THE LOOP -->
+<!-- SLIDE 8: THE LOOP -->
+<div class="slide" data-slide="7">
 <section class="loop" id="loop" data-scene="8">
   <div class="loop__fog"></div>
   <div class="loop__ring">
     <p class="loop__quote">Wiki 是持久化的<br>編譯產物，<br>不是即時的<br>檢索結果。</p>
   </div>
 </section>
+</div>
 
-<!-- SCENE 9: FOOTER -->
-<footer class="farewell">
-  <div class="farewell__line"></div>
-  <p class="farewell__text">LLM Wiki — 完整教學指南</p>
-</footer>
+<!-- SLIDE 9: FOOTER -->
+<div class="slide" data-slide="8">
+<section class="farewell-slide" data-scene="9">
+  <div class="farewell">
+    <div class="farewell__line"></div>
+    <p class="farewell__text">LLM Wiki — 完整教學指南</p>
+  </div>
+</section>
+</div>
+
+</div><!-- /slides -->
 
 <script>
-// === SCROLL OBSERVER ===
-const sections = document.querySelectorAll('[data-scene]');
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      entry.target.classList.add('visible');
-    }
+(() => {
+  const slides = document.querySelectorAll('.slide');
+  const dots = document.getElementById('slideNav');
+  const counterCurrent = document.getElementById('counterCurrent');
+  const counterTotal = document.getElementById('counterTotal');
+  const keyHint = document.getElementById('keyHint');
+  const totalSlides = slides.length;
+  let current = 0;
+  let transitioning = false;
+
+  counterTotal.textContent = totalSlides;
+
+  // Build nav dots
+  slides.forEach((_, i) => {
+    const dot = document.createElement('button');
+    dot.className = 'slide-nav__dot' + (i === 0 ? ' active' : '');
+    dot.setAttribute('aria-label', 'Slide ' + (i + 1));
+    dot.addEventListener('click', () => goTo(i));
+    dots.appendChild(dot);
   });
-}, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
+  const allDots = dots.querySelectorAll('.slide-nav__dot');
 
-sections.forEach(s => observer.observe(s));
+  function goTo(index) {
+    if (index === current || index < 0 || index >= totalSlides || transitioning) return;
+    transitioning = true;
 
-// Hero visible on load
-window.addEventListener('load', () => {
-  document.querySelector('.hero').classList.add('visible');
-});
+    // Scroll current slide's inner back to top
+    const currentInner = slides[current].querySelector('.slide__inner') || slides[current];
+    if (currentInner.scrollTop) currentInner.scrollTop = 0;
+    slides[current].scrollTop = 0;
 
-// === SCROLL HANDLER (batched via rAF) ===
-const progressFill = document.getElementById('progressFill');
-const markers = document.querySelectorAll('.progress-marker');
-const archLayers = document.querySelectorAll('.arch-layer');
-const archSection = document.querySelector('.architecture');
-const sectionEls = document.querySelectorAll('section[id]');
-let ticking = false;
+    slides[current].classList.remove('active');
+    slides[index].classList.add('active');
 
-function onScroll() {
-  if (ticking) return;
-  ticking = true;
-  requestAnimationFrame(() => {
-    const scrollTop = window.scrollY;
-    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    allDots[current].classList.remove('active');
+    allDots[index].classList.add('active');
 
-    // Progress line
-    progressFill.style.height = (docHeight > 0 ? (scrollTop / docHeight) * 100 : 0) + '%';
+    current = index;
+    counterCurrent.textContent = current + 1;
 
-    // Active marker
-    let currentId = '';
-    sectionEls.forEach(sec => {
-      if (sec.getBoundingClientRect().top <= window.innerHeight * 0.4) currentId = sec.id;
-    });
-    markers.forEach(m => m.classList.toggle('active', m.getAttribute('href') === '#' + currentId));
-
-    // Architecture layers
-    if (archSection) {
-      const rect = archSection.getBoundingClientRect();
-      const p = Math.max(0, Math.min(1, -rect.top / (rect.height - window.innerHeight)));
-      const idx = Math.min(3, Math.floor(p * 4));
-      archLayers.forEach((l, i) => l.classList.toggle('active', i === idx));
+    // Hero visibility
+    if (current === 0) {
+      document.querySelector('.hero').classList.add('visible');
     }
 
-    ticking = false;
-  });
-}
-window.addEventListener('scroll', onScroll, { passive: true });
-onScroll();
+    setTimeout(() => { transitioning = false; }, 500);
+  }
 
-// === HERO FOG PARALLAX (interaction-effects #35) ===
-const heroFogLayers = document.querySelectorAll('.hero__fog-layer');
-const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-if (!prefersReducedMotion) {
-  let mx = 0, my = 0, fogTicking = false;
-  document.addEventListener('mousemove', (e) => {
-    mx = (e.clientX / window.innerWidth - 0.5) * 2;
-    my = (e.clientY / window.innerHeight - 0.5) * 2;
-    if (!fogTicking) {
-      fogTicking = true;
-      requestAnimationFrame(() => {
-        heroFogLayers.forEach((layer, i) => {
-          const depth = (i + 1) * 12;
-          layer.style.transform = `translate(calc(-50% + ${mx * depth}px), ${my * depth}px)`;
+  function next() { goTo(current + 1); }
+  function prev() { goTo(current - 1); }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (keyHint) keyHint.classList.add('hidden');
+    if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
+      e.preventDefault();
+      // If slide is scrollable and not at bottom, let it scroll internally first
+      const slide = slides[current];
+      if (slide.scrollHeight > slide.clientHeight + 10) {
+        const atBottom = slide.scrollTop + slide.clientHeight >= slide.scrollHeight - 10;
+        if (!atBottom) {
+          slide.scrollBy({ top: window.innerHeight * 0.7, behavior: 'smooth' });
+          return;
+        }
+      }
+      next();
+    }
+    if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+      e.preventDefault();
+      const slide = slides[current];
+      if (slide.scrollTop > 10) {
+        slide.scrollBy({ top: -window.innerHeight * 0.7, behavior: 'smooth' });
+        return;
+      }
+      prev();
+    }
+    if (e.key === 'Home') { e.preventDefault(); goTo(0); }
+    if (e.key === 'End') { e.preventDefault(); goTo(totalSlides - 1); }
+  });
+
+  // Mouse wheel navigation
+  let wheelCooldown = false;
+  document.addEventListener('wheel', (e) => {
+    if (wheelCooldown) return;
+
+    const slide = slides[current];
+    const isScrollable = slide.scrollHeight > slide.clientHeight + 10;
+
+    if (isScrollable) {
+      const atTop = slide.scrollTop <= 5;
+      const atBottom = slide.scrollTop + slide.clientHeight >= slide.scrollHeight - 5;
+      // Let the slide scroll internally unless at boundary
+      if (e.deltaY > 0 && !atBottom) return;
+      if (e.deltaY < 0 && !atTop) return;
+    }
+
+    wheelCooldown = true;
+    if (e.deltaY > 0) next();
+    else if (e.deltaY < 0) prev();
+    setTimeout(() => { wheelCooldown = false; }, 800);
+  }, { passive: true });
+
+  // Touch navigation
+  let touchStartY = 0;
+  document.addEventListener('touchstart', (e) => {
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  document.addEventListener('touchend', (e) => {
+    const diff = touchStartY - e.changedTouches[0].clientY;
+    const slide = slides[current];
+    const isScrollable = slide.scrollHeight > slide.clientHeight + 10;
+
+    if (Math.abs(diff) < 50) return; // too small
+
+    if (isScrollable) {
+      const atTop = slide.scrollTop <= 5;
+      const atBottom = slide.scrollTop + slide.clientHeight >= slide.scrollHeight - 5;
+      if (diff > 0 && !atBottom) return;
+      if (diff < 0 && !atTop) return;
+    }
+
+    if (diff > 50) next();
+    else if (diff < -50) prev();
+  }, { passive: true });
+
+  // Hero visible on load
+  window.addEventListener('load', () => {
+    document.querySelector('.hero').classList.add('visible');
+  });
+
+  // Hero fog parallax
+  const heroFogLayers = document.querySelectorAll('.hero__fog-layer');
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!prefersReducedMotion) {
+    let mx = 0, my = 0, fogTicking = false;
+    document.addEventListener('mousemove', (e) => {
+      mx = (e.clientX / window.innerWidth - 0.5) * 2;
+      my = (e.clientY / window.innerHeight - 0.5) * 2;
+      if (!fogTicking) {
+        fogTicking = true;
+        requestAnimationFrame(() => {
+          heroFogLayers.forEach((layer, i) => {
+            const depth = (i + 1) * 12;
+            layer.style.transform = `translate(calc(-50% + ${mx * depth}px), ${my * depth}px)`;
+          });
+          fogTicking = false;
         });
-        fogTicking = false;
-      });
-    }
-  });
-}
+      }
+    });
+  }
+})();
 </script>
 
 </body>
