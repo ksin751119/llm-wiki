@@ -36,7 +36,6 @@
 
 /* === RESET === */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; }
 body {
   background: var(--bg);
   color: var(--text);
@@ -45,6 +44,7 @@ body {
   line-height: 1.7;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  -webkit-overflow-scrolling: touch;
 }
 a { color: var(--accent); text-decoration: none; }
 
@@ -69,12 +69,12 @@ body::after {
   height: 100vh;
   background: var(--border);
   z-index: 100;
+  pointer-events: none;
 }
 .progress-line__fill {
   width: 1px;
   height: 0%;
   background: var(--accent);
-  transition: height 0.1s linear;
 }
 .progress-line__markers {
   position: fixed;
@@ -144,7 +144,6 @@ body::after {
   border-radius: 50%;
   filter: blur(80px);
   pointer-events: none;
-  will-change: transform;
 }
 .hero__fog-1 {
   width: 700px; height: 700px;
@@ -182,6 +181,7 @@ body::after {
   inset: 0;
   background: radial-gradient(ellipse at center, transparent 40%, rgba(14, 17, 23, 0.6) 100%);
   pointer-events: none;
+  z-index: 0;
 }
 .hero__content {
   position: relative;
@@ -334,6 +334,32 @@ body::after {
   font-size: 14px;
   color: var(--text-muted);
   line-height: 1.8;
+}
+
+/* === PAGE TYPES === */
+.page-types {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.page-type {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+.page-type__name {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--accent);
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+.page-type__desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
 }
 
 /* === DUAL INDEX === */
@@ -978,7 +1004,14 @@ body::after {
       </div>
       <div class="arch-text-block">
         <h4>六種頁面類型</h4>
-        <p>摘要頁記錄單一來源重點。實體頁追蹤人物與組織。概念頁彙整跨來源主題。比較頁提供結構化對比。綜合頁呈現高層次趨勢。總覽頁是 wiki 的全景。</p>
+        <div class="page-types">
+          <div class="page-type"><span class="page-type__name">摘要頁</span><span class="page-type__desc">單一來源的重點摘錄</span></div>
+          <div class="page-type"><span class="page-type__name">實體頁</span><span class="page-type__desc">人物／組織／概念的持久頁面</span></div>
+          <div class="page-type"><span class="page-type__name">概念頁</span><span class="page-type__desc">跨來源的主題彙整</span></div>
+          <div class="page-type"><span class="page-type__name">比較頁</span><span class="page-type__desc">兩個以上項目的結構化對比</span></div>
+          <div class="page-type"><span class="page-type__name">綜合頁</span><span class="page-type__desc">高層次的洞察與趨勢</span></div>
+          <div class="page-type"><span class="page-type__name">總覽頁</span><span class="page-type__desc">wiki 的整體摘要</span></div>
+        </div>
       </div>
       <div class="arch-text-block">
         <h4>Schema 驅動</h4>
@@ -1262,57 +1295,65 @@ window.addEventListener('load', () => {
   document.querySelector('.hero').classList.add('visible');
 });
 
-// === PROGRESS LINE ===
+// === SCROLL HANDLER (batched via rAF) ===
 const progressFill = document.getElementById('progressFill');
 const markers = document.querySelectorAll('.progress-marker');
-function updateProgress() {
-  const scrollTop = window.scrollY;
-  const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-  const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
-  progressFill.style.height = progress + '%';
+const archLayers = document.querySelectorAll('.arch-layer');
+const archSection = document.querySelector('.architecture');
+const sectionEls = document.querySelectorAll('section[id]');
+let ticking = false;
 
-  // Update active markers
-  const sectionEls = document.querySelectorAll('section[id]');
-  let currentId = '';
-  sectionEls.forEach(sec => {
-    if (sec.getBoundingClientRect().top <= window.innerHeight * 0.4) {
-      currentId = sec.id;
+function onScroll() {
+  if (ticking) return;
+  ticking = true;
+  requestAnimationFrame(() => {
+    const scrollTop = window.scrollY;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+
+    // Progress line
+    progressFill.style.height = (docHeight > 0 ? (scrollTop / docHeight) * 100 : 0) + '%';
+
+    // Active marker
+    let currentId = '';
+    sectionEls.forEach(sec => {
+      if (sec.getBoundingClientRect().top <= window.innerHeight * 0.4) currentId = sec.id;
+    });
+    markers.forEach(m => m.classList.toggle('active', m.getAttribute('href') === '#' + currentId));
+
+    // Architecture layers
+    if (archSection) {
+      const rect = archSection.getBoundingClientRect();
+      const p = Math.max(0, Math.min(1, -rect.top / (rect.height - window.innerHeight)));
+      const idx = Math.min(3, Math.floor(p * 4));
+      archLayers.forEach((l, i) => l.classList.toggle('active', i === idx));
     }
-  });
-  markers.forEach(m => {
-    m.classList.toggle('active', m.getAttribute('href') === '#' + currentId);
+
+    ticking = false;
   });
 }
-window.addEventListener('scroll', updateProgress, { passive: true });
-updateProgress();
+window.addEventListener('scroll', onScroll, { passive: true });
+onScroll();
 
 // === HERO FOG PARALLAX (interaction-effects #35) ===
 const heroFogLayers = document.querySelectorAll('.hero__fog-layer');
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 if (!prefersReducedMotion) {
+  let mx = 0, my = 0, fogTicking = false;
   document.addEventListener('mousemove', (e) => {
-    const x = (e.clientX / window.innerWidth - 0.5) * 2;
-    const y = (e.clientY / window.innerHeight - 0.5) * 2;
-    heroFogLayers.forEach((layer, i) => {
-      const depth = (i + 1) * 12;
-      layer.style.transform = `translate(calc(-50% + ${x * depth}px), ${y * depth}px)`;
-    });
+    mx = (e.clientX / window.innerWidth - 0.5) * 2;
+    my = (e.clientY / window.innerHeight - 0.5) * 2;
+    if (!fogTicking) {
+      fogTicking = true;
+      requestAnimationFrame(() => {
+        heroFogLayers.forEach((layer, i) => {
+          const depth = (i + 1) * 12;
+          layer.style.transform = `translate(calc(-50% + ${mx * depth}px), ${my * depth}px)`;
+        });
+        fogTicking = false;
+      });
+    }
   });
 }
-
-// === ARCHITECTURE LAYER HIGHLIGHT ON SCROLL ===
-const archLayers = document.querySelectorAll('.arch-layer');
-const archSection = document.querySelector('.architecture');
-function updateArchLayers() {
-  if (!archSection) return;
-  const rect = archSection.getBoundingClientRect();
-  const progress = Math.max(0, Math.min(1, -rect.top / (rect.height - window.innerHeight)));
-  const activeIndex = Math.min(3, Math.floor(progress * 4));
-  archLayers.forEach((layer, i) => {
-    layer.classList.toggle('active', i === activeIndex);
-  });
-}
-window.addEventListener('scroll', updateArchLayers, { passive: true });
 </script>
 
 </body>
