@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Wiki — 完整教學指南</title>
+<meta name="description" content="LLM 增量建構並維護一個持久化 wiki — 知識編譯一次，持續更新，查詢時只需讀取已編譯的成果。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* === TOKENS === */
+:root {
+  --bg: #0E1117;
+  --bg-elevated: #161B22;
+  --text: #F0EDE8;
+  --text-muted: #8B9098;
+  --text-ghost: #4A4F58;
+  --accent: #C4956A;
+  --accent-dim: rgba(196, 149, 106, 0.15);
+  --fog-blue: #6B7D82;
+  --border: rgba(255, 255, 255, 0.06);
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --space-sm: 1.5rem;
+  --space-md: 3rem;
+  --space-lg: 6rem;
+  --space-xl: 10rem;
+  --corridor-wide: min(90%, 1200px);
+  --corridor-mid: min(80%, 1000px);
+  --corridor-narrow: min(70%, 860px);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --radius: 4px;
+}
+
+/* === RESET === */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.7;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); text-decoration: none; }
+
+/* === GRAIN OVERLAY === */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+}
+
+/* === PROGRESS LINE === */
+.progress-line {
+  position: fixed;
+  left: 2rem;
+  top: 0;
+  width: 1px;
+  height: 100vh;
+  background: var(--border);
+  z-index: 100;
+}
+.progress-line__fill {
+  width: 1px;
+  height: 0%;
+  background: var(--accent);
+  transition: height 0.1s linear;
+}
+.progress-line__markers {
+  position: fixed;
+  left: 1.2rem;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  z-index: 100;
+  pointer-events: none;
+}
+.progress-marker {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--text-ghost);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  transition: color 0.5s var(--ease);
+  pointer-events: auto;
+  cursor: pointer;
+}
+.progress-marker.active { color: var(--accent); }
+
+/* === SECTION HEADER === */
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+  margin-bottom: 1rem;
+}
+.section-title {
+  font-family: var(--font-serif);
+  font-size: clamp(28px, 4vw, 48px);
+  font-weight: 300;
+  color: var(--text);
+  line-height: 1.2;
+  margin-bottom: var(--space-md);
+}
+.section-desc {
+  font-size: 16px;
+  color: var(--text-muted);
+  max-width: 640px;
+  line-height: 1.8;
+}
+
+/* ==================== */
+/* SCENE 1 — HERO       */
+/* ==================== */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 0 5%;
+  overflow: hidden;
+}
+.hero__fog-layer {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  will-change: transform;
+}
+.hero__fog-1 {
+  width: 700px; height: 700px;
+  background: radial-gradient(circle, rgba(196, 149, 106, 0.1), transparent 70%);
+  bottom: -15%; left: 50%; transform: translateX(-50%);
+}
+.hero__fog-2 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(107, 125, 130, 0.06), transparent 70%);
+  top: 15%; right: 8%;
+}
+.hero__fog-3 {
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(196, 149, 106, 0.05), transparent 70%);
+  top: 40%; left: 5%;
+}
+.hero__ring {
+  position: absolute;
+  width: 350px; height: 350px;
+  border: 1px solid rgba(196, 149, 106, 0.05);
+  border-radius: 50%;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.hero__ring::before {
+  content: '';
+  position: absolute;
+  inset: -40px;
+  border: 1px solid rgba(196, 149, 106, 0.025);
+  border-radius: 50%;
+}
+.hero__vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(14, 17, 23, 0.6) 100%);
+  pointer-events: none;
+}
+.hero__content {
+  position: relative;
+  z-index: 1;
+  max-width: 800px;
+}
+.hero__title {
+  font-family: var(--font-serif);
+  font-size: clamp(40px, 7vw, 110px);
+  font-weight: 300;
+  color: var(--text);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  opacity: 0;
+  transition: opacity 2s var(--ease);
+}
+.hero__subtitle {
+  font-family: var(--font-sans);
+  font-size: clamp(15px, 1.8vw, 20px);
+  color: var(--text-muted);
+  margin-top: 2.5rem;
+  line-height: 1.8;
+  opacity: 0;
+  transition: opacity 2s var(--ease) 0.6s;
+}
+.hero__subtitle em {
+  color: var(--accent);
+  font-style: normal;
+}
+.hero__scroll-hint {
+  position: absolute;
+  bottom: 3rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--text-ghost);
+  opacity: 0;
+  transition: opacity 2s var(--ease) 1.5s;
+}
+.hero.visible .hero__title,
+.hero.visible .hero__subtitle,
+.hero.visible .hero__scroll-hint { opacity: 1; }
+
+/* ======================== */
+/* SCENE 2 — ARCHITECTURE   */
+/* ======================== */
+.architecture {
+  width: var(--corridor-mid);
+  margin: 0 auto;
+  padding: var(--space-xl) 0;
+  transform: translateZ(-100px) translateY(30px);
+  opacity: 0;
+  transition: all 2s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+.architecture.visible {
+  transform: translateZ(0) translateY(0);
+  opacity: 1;
+}
+.architecture__grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: var(--space-lg);
+  align-items: start;
+  margin-top: var(--space-md);
+}
+.architecture__diagram {
+  position: sticky;
+  top: 15vh;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.arch-layer {
+  padding: 1.5rem 2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color 0.8s var(--ease), background 0.8s var(--ease), box-shadow 0.8s var(--ease);
+  position: relative;
+}
+.arch-layer.active {
+  border-color: rgba(196, 149, 106, 0.3);
+  background: rgba(196, 149, 106, 0.03);
+  box-shadow: 0 0 40px rgba(196, 149, 106, 0.05);
+}
+.arch-layer__label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-ghost);
+  margin-bottom: 0.5rem;
+  transition: color 0.8s var(--ease);
+}
+.arch-layer.active .arch-layer__label { color: var(--accent); }
+.arch-layer__name {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.25rem;
+}
+.arch-layer__desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+.arch-layer__owner {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-ghost);
+}
+.arch-connector {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 auto;
+}
+.arch-connector__label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-ghost);
+  text-align: center;
+  padding: 4px 0;
+  letter-spacing: 0.05em;
+}
+.architecture__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+.arch-text-block {
+  padding: 1.5rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.arch-text-block h4 {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+.arch-text-block p {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.8;
+}
+
+/* === DUAL INDEX === */
+.dual-index {
+  margin-top: var(--space-lg);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+.dual-index__side {
+  padding: 1.5rem 2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.dual-index__icon {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent);
+  margin-bottom: 0.75rem;
+  letter-spacing: 0.08em;
+}
+.dual-index__title {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+.dual-index__desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* ====================== */
+/* SCENE 3 — INGEST        */
+/* ====================== */
+.ingest {
+  width: var(--corridor-narrow);
+  margin: 0 auto;
+  padding: var(--space-xl) 0;
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 1.2s ease-in-out;
+}
+.ingest.visible { clip-path: inset(0 0 0 0); }
+
+.ingest__flow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  margin-top: var(--space-md);
+}
+.ingest__step {
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color 0.5s var(--ease), background 0.5s var(--ease);
+  position: relative;
+}
+.ingest__step:hover {
+  border-color: rgba(196, 149, 106, 0.25);
+  background: rgba(196, 149, 106, 0.02);
+}
+.ingest__step-number {
+  width: 32px; height: 32px;
+  border: 1px solid rgba(196, 149, 106, 0.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--accent);
+  margin-bottom: 1rem;
+}
+.ingest__step-title {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.4rem;
+}
+.ingest__step-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+.ingest__cascade {
+  margin-top: var(--space-lg);
+  padding: 2rem 2.5rem;
+  border: 1px solid rgba(196, 149, 106, 0.15);
+  border-radius: var(--radius);
+  background: rgba(196, 149, 106, 0.02);
+}
+.ingest__cascade-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin-bottom: 1rem;
+}
+.ingest__cascade-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.ingest__cascade-list li {
+  font-size: 14px;
+  color: var(--text-muted);
+  padding-left: 1.5rem;
+  position: relative;
+  line-height: 1.6;
+}
+.ingest__cascade-list li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+}
+
+/* ======================== */
+/* SCENE 4 — QUERY & LINT   */
+/* ======================== */
+.pivot {
+  width: var(--corridor-narrow);
+  margin: 0 auto;
+  padding: var(--space-xl) 0;
+}
+.pivot__split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: var(--space-md);
+}
+.pivot__side {
+  padding: 2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  clip-path: inset(0 50% 0 0);
+  transition: clip-path 1.2s var(--ease);
+}
+.pivot__side:last-child {
+  clip-path: inset(0 0 0 50%);
+}
+.pivot.visible .pivot__side {
+  clip-path: inset(0);
+}
+.pivot__side-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin-bottom: 1.25rem;
+}
+.pivot__side-title {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 1rem;
+}
+.pivot__flow-item {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+.pivot__flow-item::before {
+  content: '▸';
+  color: var(--accent);
+  font-size: 10px;
+  flex-shrink: 0;
+}
+.pivot__pullquote {
+  margin-top: var(--space-lg);
+  padding: 2.5rem 3rem;
+  border-left: 2px solid var(--accent);
+  position: relative;
+}
+.pivot__pullquote-text {
+  font-family: var(--font-serif);
+  font-size: clamp(18px, 2.2vw, 26px);
+  color: var(--text);
+  line-height: 1.6;
+  font-weight: 300;
+}
+.pivot__pullquote-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-ghost);
+  margin-top: 1rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* ======================== */
+/* SCENE 5 — EVIDENCE WALL  */
+/* ======================== */
+.evidence {
+  width: var(--corridor-narrow);
+  margin: 0 auto;
+  padding: var(--space-xl) 0;
+}
+.evidence__table-wrap {
+  margin-top: var(--space-md);
+  overflow-x: auto;
+}
+.evidence__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.evidence__table thead th {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 1rem 1.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.evidence__table thead th:nth-child(1) { color: var(--text-ghost); width: 25%; }
+.evidence__table thead th:nth-child(2) { color: var(--fog-blue); }
+.evidence__table thead th:nth-child(3) { color: var(--accent); }
+.evidence__table tbody tr {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.evidence.visible .evidence__table tbody tr { opacity: 1; transform: translateY(0); }
+.evidence.visible .evidence__table tbody tr:nth-child(1) { transition-delay: 0.05s; }
+.evidence.visible .evidence__table tbody tr:nth-child(2) { transition-delay: 0.12s; }
+.evidence.visible .evidence__table tbody tr:nth-child(3) { transition-delay: 0.19s; }
+.evidence.visible .evidence__table tbody tr:nth-child(4) { transition-delay: 0.26s; }
+.evidence.visible .evidence__table tbody tr:nth-child(5) { transition-delay: 0.33s; }
+.evidence__table td {
+  padding: 1rem 1.5rem;
+  font-size: 14px;
+  line-height: 1.6;
+  border-bottom: 1px solid rgba(255,255,255,0.025);
+  color: var(--text-muted);
+  vertical-align: top;
+}
+.evidence__table td:first-child {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-ghost);
+  letter-spacing: 0.02em;
+}
+.evidence__table td:nth-child(3) { color: var(--text); }
+
+.evidence__memex {
+  margin-top: var(--space-lg);
+  text-align: center;
+  padding: 2rem;
+}
+.evidence__memex-quote {
+  font-family: var(--font-serif);
+  font-size: clamp(16px, 2vw, 22px);
+  font-weight: 300;
+  font-style: italic;
+  color: var(--text);
+  line-height: 1.6;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.evidence__memex-attr {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-ghost);
+  margin-top: 1rem;
+  letter-spacing: 0.1em;
+}
+
+/* ======================== */
+/* SCENE 6 — TOOLCHAIN      */
+/* ======================== */
+.toolchain {
+  width: var(--corridor-mid);
+  margin: 0 auto;
+  padding: var(--space-xl) 0;
+  transform: scale(0.88);
+  opacity: 0;
+  transition: all 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.toolchain.visible { transform: scale(1); opacity: 1; }
+
+.toolchain__constellation {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  margin-top: var(--space-md);
+}
+.toolchain__node {
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-align: center;
+  filter: saturate(0.8) brightness(0.95);
+  transition: filter 0.5s ease, border-color 0.5s ease, background 0.5s ease;
+}
+.toolchain__node:hover {
+  filter: saturate(1.2) brightness(1.05);
+  border-color: rgba(196, 149, 106, 0.3);
+  background: rgba(196, 149, 106, 0.02);
+}
+.toolchain__node--primary {
+  border-color: rgba(196, 149, 106, 0.2);
+  background: rgba(196, 149, 106, 0.03);
+  filter: saturate(1) brightness(1);
+}
+.toolchain__node-icon {
+  font-size: 28px;
+  margin-bottom: 0.75rem;
+  display: block;
+}
+.toolchain__node-name {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.25rem;
+}
+.toolchain__node-role {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.toolchain__node-when {
+  font-size: 12px;
+  color: var(--text-ghost);
+  margin-top: 0.5rem;
+  line-height: 1.5;
+}
+
+.toolchain__timeline {
+  margin-top: var(--space-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  padding: 2.5rem 2rem;
+}
+.toolchain__timeline::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 2rem; right: 2rem;
+  height: 1px;
+  background: var(--border);
+}
+.toolchain__milestone {
+  position: relative;
+  text-align: center;
+  z-index: 1;
+  background: var(--bg);
+  padding: 0 1rem;
+}
+.toolchain__milestone-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin: 0 auto 0.75rem;
+}
+.toolchain__milestone-year {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+}
+.toolchain__milestone-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+  max-width: 120px;
+}
+
+/* ======================== */
+/* SCENE 7 — INVITATION     */
+/* ======================== */
+.invitation {
+  width: var(--corridor-wide);
+  margin: 0 auto;
+  padding: var(--space-xl) 0;
+  opacity: 0;
+  transition: opacity 2s var(--ease);
+}
+.invitation.visible { opacity: 1; }
+
+.invitation__steps {
+  max-width: 580px;
+  margin: var(--space-md) auto 0;
+}
+.invitation__step {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1.25rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.035);
+}
+.invitation__step-ring {
+  width: 32px; height: 32px;
+  border: 1px solid rgba(196, 149, 106, 0.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.invitation__step-text h4 {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.25rem;
+}
+.invitation__step-text p {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+.invitation__coda {
+  margin-top: var(--space-lg);
+  text-align: center;
+}
+.invitation__coda-text {
+  font-family: var(--font-serif);
+  font-size: clamp(18px, 2.2vw, 24px);
+  font-weight: 300;
+  color: var(--text);
+  font-style: italic;
+  line-height: 1.6;
+}
+.invitation__coda-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-ghost);
+  margin-top: 0.75rem;
+  letter-spacing: 0.08em;
+}
+
+/* ======================== */
+/* SCENE 8 — THE LOOP       */
+/* ======================== */
+.loop {
+  min-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  padding: var(--space-xl) 5%;
+  filter: blur(20px);
+  transform: scale(1.05);
+  opacity: 0;
+  transition: all 1.2s ease;
+}
+.loop.visible { filter: blur(0); transform: scale(1); opacity: 1; }
+
+.loop__fog {
+  position: absolute;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(196, 149, 106, 0.08), transparent 70%);
+  filter: blur(60px);
+  z-index: 0;
+  pointer-events: none;
+}
+.loop__ring {
+  width: clamp(220px, 28vw, 380px);
+  height: clamp(220px, 28vw, 380px);
+  border: 1px solid rgba(196, 149, 106, 0.15);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem;
+  position: relative;
+  z-index: 1;
+}
+.loop__ring::before {
+  content: '';
+  position: absolute;
+  inset: -25px;
+  border: 1px solid rgba(196, 149, 106, 0.05);
+  border-radius: 50%;
+}
+.loop__ring::after {
+  content: '';
+  position: absolute;
+  inset: -50px;
+  border: 1px solid rgba(196, 149, 106, 0.02);
+  border-radius: 50%;
+}
+.loop__quote {
+  font-family: var(--font-serif);
+  font-size: clamp(14px, 1.8vw, 20px);
+  color: var(--text);
+  line-height: 1.7;
+  font-weight: 300;
+}
+
+/* ======================== */
+/* SCENE 9 — FOOTER         */
+/* ======================== */
+.farewell {
+  padding: var(--space-md) 5% var(--space-lg);
+  text-align: center;
+}
+.farewell__line {
+  width: 40px;
+  height: 1px;
+  background: var(--border);
+  margin: 0 auto var(--space-sm);
+}
+.farewell__text {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--text-ghost);
+  text-transform: uppercase;
+}
+
+/* ======================== */
+/* RESPONSIVE               */
+/* ======================== */
+@media (max-width: 768px) {
+  :root {
+    --corridor-wide: 92%;
+    --corridor-mid: 90%;
+    --corridor-narrow: 88%;
+    --space-xl: 6rem;
+    --space-lg: 4rem;
+  }
+  .progress-line, .progress-line__markers { display: none; }
+  .architecture__grid { grid-template-columns: 1fr; }
+  .architecture__diagram { position: relative; top: auto; }
+  .ingest__flow { grid-template-columns: 1fr; }
+  .pivot__split { grid-template-columns: 1fr; }
+  .pivot__side { clip-path: none !important; }
+  .toolchain__constellation { grid-template-columns: 1fr 1fr; }
+  .dual-index { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .toolchain__constellation { grid-template-columns: 1fr; }
+  .toolchain__timeline { flex-direction: column; gap: 2rem; align-items: flex-start; }
+  .toolchain__timeline::before { display: none; }
+}
+
+/* === REDUCED MOTION === */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+  .hero__title, .hero__subtitle, .hero__scroll-hint { opacity: 1; }
+  .architecture, .ingest, .toolchain, .invitation, .loop { opacity: 1; transform: none; filter: none; }
+  .ingest { clip-path: none; }
+  .pivot__side { clip-path: none; }
+  .evidence__table tbody tr { opacity: 1; transform: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- PROGRESS LINE -->
+<div class="progress-line"><div class="progress-line__fill" id="progressFill"></div></div>
+<nav class="progress-line__markers" aria-label="章節導覽">
+  <a class="progress-marker" href="#hero">總覽</a>
+  <a class="progress-marker" href="#architecture">架構</a>
+  <a class="progress-marker" href="#ingest">Ingest</a>
+  <a class="progress-marker" href="#pivot">Query</a>
+  <a class="progress-marker" href="#evidence">設計</a>
+  <a class="progress-marker" href="#toolchain">工具</a>
+  <a class="progress-marker" href="#invitation">開始</a>
+</nav>
+
+<!-- SCENE 1: HERO -->
+<section class="hero" id="hero" data-scene="1">
+  <div class="hero__fog-layer hero__fog-1"></div>
+  <div class="hero__fog-layer hero__fog-2"></div>
+  <div class="hero__fog-layer hero__fog-3"></div>
+  <div class="hero__ring"></div>
+  <div class="hero__vignette"></div>
+  <div class="hero__content">
+    <h1 class="hero__title">如果 LLM<br>幫你維護知識庫？</h1>
+    <p class="hero__subtitle">知識編譯一次，持續更新。<br>查詢時只需讀取<em>已編譯的成果</em>。</p>
+  </div>
+  <div class="hero__scroll-hint">SCROLL</div>
+</section>
+
+<!-- SCENE 2: ARCHITECTURE -->
+<section class="architecture" id="architecture" data-scene="2">
+  <div class="section-label">第二章 — 架構全景</div>
+  <h2 class="section-title">三層架構</h2>
+  <p class="section-desc">每層有明確的擁有者和不變性。LLM 不是通用聊天機器人——它是有紀律的維護者。</p>
+
+  <div class="architecture__grid">
+    <div class="architecture__diagram">
+      <div class="arch-layer active" data-layer="interaction">
+        <div class="arch-layer__label">使用者互動層</div>
+        <div class="arch-layer__name">Ingest / Query / Lint</div>
+        <div class="arch-layer__desc">三大操作定義所有行為</div>
+        <span class="arch-layer__owner">擁有者：人類</span>
+      </div>
+      <div class="arch-connector"><div class="arch-connector__label">定義行為 ↓</div></div>
+      <div class="arch-layer" data-layer="schema">
+        <div class="arch-layer__label">Schema 層</div>
+        <div class="arch-layer__name">CLAUDE.md / AGENTS.md</div>
+        <div class="arch-layer__desc">結構約定、格式規範、工作流定義</div>
+        <span class="arch-layer__owner">擁有者：人 + LLM 共同</span>
+      </div>
+      <div class="arch-connector"><div class="arch-connector__label">遵循規則 ↓</div></div>
+      <div class="arch-layer" data-layer="wiki">
+        <div class="arch-layer__label">Wiki 層</div>
+        <div class="arch-layer__name">實體頁 / 概念頁 / 摘要頁 / 比較頁</div>
+        <div class="arch-layer__desc">LLM 寫入，人類閱讀</div>
+        <span class="arch-layer__owner">擁有者：LLM</span>
+      </div>
+      <div class="arch-connector"><div class="arch-connector__label">讀取（不修改）↓</div></div>
+      <div class="arch-layer" data-layer="raw">
+        <div class="arch-layer__label">Raw Sources 層</div>
+        <div class="arch-layer__name">文章、論文、圖片、資料檔</div>
+        <div class="arch-layer__desc">不可變真相，LLM 只讀不寫</div>
+        <span class="arch-layer__owner">擁有者：人類策展</span>
+      </div>
+    </div>
+
+    <div class="architecture__text">
+      <div class="arch-text-block">
+        <h4>職責分離</h4>
+        <p>每層擁有者明確。Raw Sources 永不被 LLM 修改，保持真相。Wiki 層只被 LLM 寫入，人只閱讀。</p>
+      </div>
+      <div class="arch-text-block">
+        <h4>六種頁面類型</h4>
+        <p>摘要頁記錄單一來源重點。實體頁追蹤人物與組織。概念頁彙整跨來源主題。比較頁提供結構化對比。綜合頁呈現高層次趨勢。總覽頁是 wiki 的全景。</p>
+      </div>
+      <div class="arch-text-block">
+        <h4>Schema 驅動</h4>
+        <p>Schema 讓 LLM 成為有紀律的維護者，而非通用聊天機器人。它定義頁面類型、命名慣例、工作流步驟，隨使用不斷演化。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="dual-index">
+    <div class="dual-index__side">
+      <div class="dual-index__icon">index.md</div>
+      <div class="dual-index__title">空間維度</div>
+      <div class="dual-index__desc">「wiki 裡有什麼」— 按類別分組的內容目錄。查詢時的第一站，每頁一行：連結 + 摘要。</div>
+    </div>
+    <div class="dual-index__side">
+      <div class="dual-index__icon">log.md</div>
+      <div class="dual-index__title">時間維度</div>
+      <div class="dual-index__desc">「wiki 怎麼變的」— Append-only 時間線。追蹤每次操作觸及的頁面，避免重複工作。</div>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE 3: INGEST -->
+<section class="ingest" id="ingest" data-scene="3">
+  <div class="section-label">第四章 — 核心流程</div>
+  <h2 class="section-title">Ingest：知識的編譯</h2>
+  <p class="section-desc">Ingest 不只是「存檔」。單一來源可能觸發 10–15 個 wiki 頁面的更新。</p>
+
+  <div class="ingest__flow">
+    <div class="ingest__step">
+      <div class="ingest__step-number">1</div>
+      <div class="ingest__step-title">加入來源</div>
+      <div class="ingest__step-desc">將文件放入 raw sources 目錄。可用 Web Clipper 一鍵擷取。</div>
+    </div>
+    <div class="ingest__step">
+      <div class="ingest__step-number">2</div>
+      <div class="ingest__step-title">LLM 讀取</div>
+      <div class="ingest__step-desc">閱讀全文，提取關鍵資訊、主張、數據。</div>
+    </div>
+    <div class="ingest__step">
+      <div class="ingest__step-number">3</div>
+      <div class="ingest__step-title">討論重點</div>
+      <div class="ingest__step-desc">使用者引導強調什麼、忽略什麼。判斷讓 wiki 更有價值。</div>
+    </div>
+    <div class="ingest__step">
+      <div class="ingest__step-number">4</div>
+      <div class="ingest__step-title">級聯更新</div>
+      <div class="ingest__step-desc">建立摘要頁、更新實體頁、概念頁、標記矛盾、加入交叉引用。</div>
+    </div>
+    <div class="ingest__step">
+      <div class="ingest__step-number">5</div>
+      <div class="ingest__step-title">更新索引</div>
+      <div class="ingest__step-desc">在 index.md 加入新條目，更新已修改頁面的摘要。</div>
+    </div>
+    <div class="ingest__step">
+      <div class="ingest__step-number">6</div>
+      <div class="ingest__step-title">記錄日誌</div>
+      <div class="ingest__step-desc">在 log.md 追加記錄，列出所有被觸及的頁面。</div>
+    </div>
+  </div>
+
+  <div class="ingest__cascade">
+    <div class="ingest__cascade-title">級聯更新的一次觸發</div>
+    <ul class="ingest__cascade-list">
+      <li>建立該來源的摘要頁</li>
+      <li>掃描既有 wiki，找到所有相關頁面</li>
+      <li>更新實體頁（新資訊、修正舊資訊）</li>
+      <li>更新概念頁（加入新觀點或證據）</li>
+      <li>標記任何矛盾（新來源 vs 舊來源）</li>
+      <li>加入交叉引用連結</li>
+    </ul>
+  </div>
+</section>
+
+<!-- SCENE 4: QUERY & LINT -->
+<section class="pivot" id="pivot" data-scene="4">
+  <div class="section-label">第五章 — 進階流程</div>
+  <h2 class="section-title">Query 與 Lint</h2>
+  <p class="section-desc">知識不只是存入，還要能取出、能自我修復。</p>
+
+  <div class="pivot__split">
+    <div class="pivot__side">
+      <div class="pivot__side-label">Query — 知識提取</div>
+      <div class="pivot__side-title">問答產生新知識</div>
+      <div class="pivot__flow-item">讀取 index.md 確定相關頁面範圍</div>
+      <div class="pivot__flow-item">讀取 3–10 頁相關 wiki 頁面</div>
+      <div class="pivot__flow-item">綜合答案，附引用來源頁面</div>
+      <div class="pivot__flow-item">值得保留？存為新 wiki 頁面</div>
+      <div class="pivot__flow-item">更新 index.md + log.md</div>
+    </div>
+    <div class="pivot__side">
+      <div class="pivot__side-label">Lint — 健康檢查</div>
+      <div class="pivot__side-title">wiki 的自我修復</div>
+      <div class="pivot__flow-item">偵測矛盾：新來源推翻舊主張？</div>
+      <div class="pivot__flow-item">過時聲明：已被更新資料取代？</div>
+      <div class="pivot__flow-item">孤兒頁面：無入站連結的頁面？</div>
+      <div class="pivot__flow-item">缺失引用：應有交叉連結但沒有？</div>
+      <div class="pivot__flow-item">建議下一步該研究什麼</div>
+    </div>
+  </div>
+
+  <div class="pivot__pullquote">
+    <div class="pivot__pullquote-text">一次比較分析、一個深度問答、一個發現的連結——這些不該消失在聊天歷史中。回填到 wiki 後，它們成為未來查詢可引用的持久知識。</div>
+    <div class="pivot__pullquote-label">知識複利</div>
+  </div>
+</section>
+
+<!-- SCENE 5: EVIDENCE WALL -->
+<section class="evidence" id="evidence" data-scene="5">
+  <div class="section-label">第六章 — 關鍵設計決策</div>
+  <h2 class="section-title">為什麼不是 RAG？</h2>
+  <p class="section-desc">知識編譯與即時檢索，根本性的差異。</p>
+
+  <div class="evidence__table-wrap">
+    <table class="evidence__table">
+      <thead>
+        <tr>
+          <th>維度</th>
+          <th>RAG</th>
+          <th>LLM Wiki</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>知識狀態</td><td>每次從零開始</td><td>持久累積</td></tr>
+        <tr><td>交叉引用</td><td>查詢時才拼湊</td><td>已預先建立</td></tr>
+        <tr><td>矛盾處理</td><td>不處理</td><td>已標記並追蹤</td></tr>
+        <tr><td>綜合深度</td><td>受檢索品質限制</td><td>反映全部已讀內容</td></tr>
+        <tr><td>維護成本</td><td>無（也無累積）</td><td>LLM 負擔，接近零</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="evidence__memex">
+    <p class="evidence__memex-quote">維護知識庫的繁瑣部分不是閱讀或思考——是記帳。人類放棄 wiki 是因為維護成本成長快於價值。LLM 不會厭倦。</p>
+    <p class="evidence__memex-attr">— Vannevar Bush 的 Memex 願景，由 LLM 實現</p>
+  </div>
+</section>
+
+<!-- SCENE 6: TOOLCHAIN -->
+<section class="toolchain" id="toolchain" data-scene="6">
+  <div class="section-label">第七章 — 工具鏈</div>
+  <h2 class="section-title">生態系統</h2>
+  <p class="section-desc">核心工具與可選擴展，組成 LLM Wiki 的運作環境。</p>
+
+  <div class="toolchain__constellation">
+    <div class="toolchain__node">
+      <span class="toolchain__node-icon">⌨</span>
+      <div class="toolchain__node-name">LLM Agent</div>
+      <div class="toolchain__node-role">知識維護者</div>
+      <div class="toolchain__node-when">Claude Code / Codex / OpenCode</div>
+    </div>
+    <div class="toolchain__node toolchain__node--primary">
+      <span class="toolchain__node-icon">◈</span>
+      <div class="toolchain__node-name">Obsidian</div>
+      <div class="toolchain__node-role">人類的 IDE</div>
+      <div class="toolchain__node-when">瀏覽、Graph View、插件生態</div>
+    </div>
+    <div class="toolchain__node">
+      <span class="toolchain__node-icon">⎇</span>
+      <div class="toolchain__node-name">Git</div>
+      <div class="toolchain__node-role">版本控制</div>
+      <div class="toolchain__node-when">歷史追蹤、分支、協作</div>
+    </div>
+    <div class="toolchain__node">
+      <span class="toolchain__node-icon">✂</span>
+      <div class="toolchain__node-name">Web Clipper</div>
+      <div class="toolchain__node-role">來源擷取</div>
+      <div class="toolchain__node-when">瀏覽器→markdown 一鍵轉換</div>
+    </div>
+    <div class="toolchain__node">
+      <span class="toolchain__node-icon">▦</span>
+      <div class="toolchain__node-name">Dataview</div>
+      <div class="toolchain__node-role">動態查詢</div>
+      <div class="toolchain__node-when">查詢 frontmatter，產生動態表格</div>
+    </div>
+    <div class="toolchain__node">
+      <span class="toolchain__node-icon">⌕</span>
+      <div class="toolchain__node-name">qmd</div>
+      <div class="toolchain__node-role">本地搜尋</div>
+      <div class="toolchain__node-when">BM25 + 向量搜尋，超過 100 來源時需要</div>
+    </div>
+  </div>
+
+  <div class="toolchain__timeline">
+    <div class="toolchain__milestone">
+      <div class="toolchain__milestone-dot"></div>
+      <div class="toolchain__milestone-year">1945</div>
+      <div class="toolchain__milestone-label">Memex 願景</div>
+    </div>
+    <div class="toolchain__milestone">
+      <div class="toolchain__milestone-dot"></div>
+      <div class="toolchain__milestone-year">1991</div>
+      <div class="toolchain__milestone-label">WWW 誕生</div>
+    </div>
+    <div class="toolchain__milestone">
+      <div class="toolchain__milestone-dot"></div>
+      <div class="toolchain__milestone-year">2024+</div>
+      <div class="toolchain__milestone-label">LLM Wiki</div>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE 7: INVITATION -->
+<section class="invitation" id="invitation" data-scene="7">
+  <div class="section-label" style="text-align:center">第八章 — 實踐指南</div>
+  <h2 class="section-title" style="text-align:center">如何開始</h2>
+
+  <div class="invitation__steps">
+    <div class="invitation__step">
+      <div class="invitation__step-ring">1</div>
+      <div class="invitation__step-text">
+        <h4>選擇領域和工具</h4>
+        <p>決定主題（研究、讀書、個人成長），選擇 LLM agent 和瀏覽器。</p>
+      </div>
+    </div>
+    <div class="invitation__step">
+      <div class="invitation__step-ring">2</div>
+      <div class="invitation__step-text">
+        <h4>建立基本結構</h4>
+        <p>建立 raw/ 和 wiki/ 目錄，初始化 index.md 和 log.md，加入 git 版控。</p>
+      </div>
+    </div>
+    <div class="invitation__step">
+      <div class="invitation__step-ring">3</div>
+      <div class="invitation__step-text">
+        <h4>撰寫 Schema</h4>
+        <p>與 LLM 共同建立初版 CLAUDE.md，定義頁面類型、命名慣例、工作流步驟。</p>
+      </div>
+    </div>
+    <div class="invitation__step">
+      <div class="invitation__step-ring">4</div>
+      <div class="invitation__step-text">
+        <h4>開始 Ingest</h4>
+        <p>從一個來源開始，逐步建立。觀察 LLM 如何處理，根據需要調整 Schema。</p>
+      </div>
+    </div>
+    <div class="invitation__step">
+      <div class="invitation__step-ring">5</div>
+      <div class="invitation__step-text">
+        <h4>定期 Lint</h4>
+        <p>每週或每 10 個來源後，請 LLM 做健康檢查。修復問題，建議下一步研究方向。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="invitation__coda">
+    <p class="invitation__coda-text">你是策展人，不是作者。<br>你選擇來源和方向，LLM 做記帳。</p>
+    <p class="invitation__coda-sub">一切都是可選的 — 從最小可行 wiki 開始</p>
+  </div>
+</section>
+
+<!-- SCENE 8: THE LOOP -->
+<section class="loop" id="loop" data-scene="8">
+  <div class="loop__fog"></div>
+  <div class="loop__ring">
+    <p class="loop__quote">Wiki 是持久化的<br>編譯產物，<br>不是即時的<br>檢索結果。</p>
+  </div>
+</section>
+
+<!-- SCENE 9: FOOTER -->
+<footer class="farewell">
+  <div class="farewell__line"></div>
+  <p class="farewell__text">LLM Wiki — 完整教學指南</p>
+</footer>
+
+<script>
+// === SCROLL OBSERVER ===
+const sections = document.querySelectorAll('[data-scene]');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
+
+sections.forEach(s => observer.observe(s));
+
+// Hero visible on load
+window.addEventListener('load', () => {
+  document.querySelector('.hero').classList.add('visible');
+});
+
+// === PROGRESS LINE ===
+const progressFill = document.getElementById('progressFill');
+const markers = document.querySelectorAll('.progress-marker');
+function updateProgress() {
+  const scrollTop = window.scrollY;
+  const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+  progressFill.style.height = progress + '%';
+
+  // Update active markers
+  const sectionEls = document.querySelectorAll('section[id]');
+  let currentId = '';
+  sectionEls.forEach(sec => {
+    if (sec.getBoundingClientRect().top <= window.innerHeight * 0.4) {
+      currentId = sec.id;
+    }
+  });
+  markers.forEach(m => {
+    m.classList.toggle('active', m.getAttribute('href') === '#' + currentId);
+  });
+}
+window.addEventListener('scroll', updateProgress, { passive: true });
+updateProgress();
+
+// === HERO FOG PARALLAX (interaction-effects #35) ===
+const heroFogLayers = document.querySelectorAll('.hero__fog-layer');
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (!prefersReducedMotion) {
+  document.addEventListener('mousemove', (e) => {
+    const x = (e.clientX / window.innerWidth - 0.5) * 2;
+    const y = (e.clientY / window.innerHeight - 0.5) * 2;
+    heroFogLayers.forEach((layer, i) => {
+      const depth = (i + 1) * 12;
+      layer.style.transform = `translate(calc(-50% + ${x * depth}px), ${y * depth}px)`;
+    });
+  });
+}
+
+// === ARCHITECTURE LAYER HIGHLIGHT ON SCROLL ===
+const archLayers = document.querySelectorAll('.arch-layer');
+const archSection = document.querySelector('.architecture');
+function updateArchLayers() {
+  if (!archSection) return;
+  const rect = archSection.getBoundingClientRect();
+  const progress = Math.max(0, Math.min(1, -rect.top / (rect.height - window.innerHeight)));
+  const activeIndex = Math.min(3, Math.floor(progress * 4));
+  archLayers.forEach((layer, i) => {
+    layer.classList.toggle('active', i === activeIndex);
+  });
+}
+window.addEventListener('scroll', updateArchLayers, { passive: true });
+</script>
+
+</body>
+</html>
