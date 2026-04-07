@@ -9,1164 +9,340 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* === TOKENS === */
 :root {
   --bg: #0E1117;
-  --bg-elevated: #161B22;
   --text: #F0EDE8;
   --text-muted: #8B9098;
   --text-ghost: #4A4F58;
   --accent: #C4956A;
-  --accent-dim: rgba(196, 149, 106, 0.15);
-  --fog-blue: #6B7D82;
-  --border: rgba(255, 255, 255, 0.06);
+  --border: rgba(255,255,255,0.06);
   --font-serif: 'Playfair Display', Georgia, serif;
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: 'Inter', -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-  --space-sm: 1.5rem;
-  --space-md: 3rem;
-  --space-lg: 6rem;
-  --space-xl: 10rem;
-  --corridor-wide: min(90%, 1200px);
-  --corridor-mid: min(80%, 1000px);
-  --corridor-narrow: min(70%, 860px);
-  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease: cubic-bezier(0.22,1,0.36,1);
   --radius: 4px;
 }
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font-sans);font-size:16px;line-height:1.7;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}
 
-/* === RESET === */
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-html {
-  height: 100%;
-  overflow: hidden;
-}
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-sans);
-  font-size: 16px;
-  line-height: 1.7;
-  overflow: hidden;
-  height: 100%;
-  -webkit-font-smoothing: antialiased;
-}
-a { color: var(--accent); text-decoration: none; }
+/* Grain */
+body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.03;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:256px}
 
-/* === SLIDE SYSTEM === */
-.slides {
-  height: 100vh;
-  overflow: hidden;
-  position: relative;
-}
-.slide {
-  position: absolute;
-  inset: 0;
-  height: 100vh;
-  overflow-y: auto;
-  overflow-x: hidden;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.8s var(--ease);
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-}
-.slide.active {
-  opacity: 1;
-  pointer-events: auto;
-}
-.slide__inner {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 4rem 0;
-  min-height: 0;
-}
-/* Slides with lots of content: scroll internally */
-.slide--scrollable .slide__inner {
-  justify-content: flex-start;
-  padding: 6rem 0 4rem;
-}
+/* === SLIDES === */
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:3rem 5%;opacity:0;visibility:hidden;transition:opacity .35s ease}
+.slide.active{opacity:1;visibility:visible}
+.slide__body{width:min(85%,960px);max-height:85vh;overflow:hidden}
 
-/* === SLIDE INDICATOR === */
-.slide-nav {
-  position: fixed;
-  right: 2rem;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  z-index: 200;
-}
-.slide-nav__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--text-ghost);
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  transition: background 0.4s var(--ease), transform 0.4s var(--ease);
-}
-.slide-nav__dot.active {
-  background: var(--accent);
-  transform: scale(1.5);
-}
-.slide-nav__dot:hover {
-  background: var(--text-muted);
-}
+/* Nav dots */
+.dots{position:fixed;right:1.5rem;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;z-index:200}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--text-ghost);border:none;padding:0;cursor:pointer;transition:background .3s,transform .3s}
+.dot.active{background:var(--accent);transform:scale(1.6)}
+.dot:hover{background:var(--text-muted)}
 
-/* === SLIDE COUNTER === */
-.slide-counter {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-ghost);
-  z-index: 200;
-  letter-spacing: 0.05em;
-}
-.slide-counter__current { color: var(--accent); }
+/* Counter */
+.counter{position:fixed;bottom:1.5rem;right:1.5rem;font-family:var(--font-mono);font-size:11px;color:var(--text-ghost);z-index:200;letter-spacing:.05em}
+.counter b{color:var(--accent);font-weight:500}
 
-/* === KEYBOARD HINT === */
-.key-hint {
-  position: fixed;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--text-ghost);
-  z-index: 200;
-  letter-spacing: 0.08em;
-  opacity: 1;
-  transition: opacity 1s var(--ease);
-}
-.key-hint.hidden { opacity: 0; }
+/* Hint */
+.hint{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);font-family:var(--font-mono);font-size:10px;color:var(--text-ghost);z-index:200;transition:opacity 1s}
 
-/* === GRAIN OVERLAY === */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  pointer-events: none;
-  opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 256px 256px;
-}
+/* === TYPOGRAPHY === */
+.label{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin-bottom:.75rem}
+.title{font-family:var(--font-serif);font-size:clamp(26px,3.5vw,44px);font-weight:300;color:var(--text);line-height:1.2;margin-bottom:1.5rem}
+.desc{font-size:15px;color:var(--text-muted);max-width:600px;line-height:1.8;margin-bottom:2rem}
 
-/* (progress line removed — using slide nav instead) */
+/* === HERO === */
+.hero{position:relative;text-align:center;flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;width:100%}
+.hero__fog{position:absolute;border-radius:50%;filter:blur(80px);pointer-events:none}
+.hero__fog--1{width:600px;height:600px;background:radial-gradient(circle,rgba(196,149,106,.1),transparent 70%);bottom:-10%;left:50%;transform:translateX(-50%)}
+.hero__fog--2{width:350px;height:350px;background:radial-gradient(circle,rgba(107,125,130,.06),transparent 70%);top:18%;right:10%}
+.hero__ring{position:absolute;width:320px;height:320px;border:1px solid rgba(196,149,106,.05);border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+.hero__vignette{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 40%,rgba(14,17,23,.6) 100%);pointer-events:none}
+.hero h1{font-family:var(--font-serif);font-size:clamp(36px,6.5vw,100px);font-weight:300;line-height:1.1;letter-spacing:-.02em;position:relative;z-index:1}
+.hero p{font-size:clamp(14px,1.6vw,19px);color:var(--text-muted);margin-top:2rem;line-height:1.8;position:relative;z-index:1}
+.hero em{color:var(--accent);font-style:normal}
 
-/* === SECTION HEADER === */
-.section-label {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
-  color: var(--accent);
-  margin-bottom: 1rem;
-}
-.section-title {
-  font-family: var(--font-serif);
-  font-size: clamp(28px, 4vw, 48px);
-  font-weight: 300;
-  color: var(--text);
-  line-height: 1.2;
-  margin-bottom: var(--space-md);
-}
-.section-desc {
-  font-size: 16px;
-  color: var(--text-muted);
-  max-width: 640px;
-  line-height: 1.8;
-}
-
-/* ==================== */
-/* SCENE 1 — HERO       */
-/* ==================== */
-.hero {
-  position: relative;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  padding: 0 5%;
-  overflow: hidden;
-}
-.hero__fog-layer {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  pointer-events: none;
-}
-.hero__fog-1 {
-  width: 700px; height: 700px;
-  background: radial-gradient(circle, rgba(196, 149, 106, 0.1), transparent 70%);
-  bottom: -15%; left: 50%; transform: translateX(-50%);
-}
-.hero__fog-2 {
-  width: 400px; height: 400px;
-  background: radial-gradient(circle, rgba(107, 125, 130, 0.06), transparent 70%);
-  top: 15%; right: 8%;
-}
-.hero__fog-3 {
-  width: 300px; height: 300px;
-  background: radial-gradient(circle, rgba(196, 149, 106, 0.05), transparent 70%);
-  top: 40%; left: 5%;
-}
-.hero__ring {
-  position: absolute;
-  width: 350px; height: 350px;
-  border: 1px solid rgba(196, 149, 106, 0.05);
-  border-radius: 50%;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-}
-.hero__ring::before {
-  content: '';
-  position: absolute;
-  inset: -40px;
-  border: 1px solid rgba(196, 149, 106, 0.025);
-  border-radius: 50%;
-}
-.hero__vignette {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at center, transparent 40%, rgba(14, 17, 23, 0.6) 100%);
-  pointer-events: none;
-  z-index: 0;
-}
-.hero__content {
-  position: relative;
-  z-index: 1;
-  max-width: 800px;
-}
-.hero__title {
-  font-family: var(--font-serif);
-  font-size: clamp(40px, 7vw, 110px);
-  font-weight: 300;
-  color: var(--text);
-  line-height: 1.08;
-  letter-spacing: -0.02em;
-  opacity: 0;
-  transition: opacity 2s var(--ease);
-}
-.hero__subtitle {
-  font-family: var(--font-sans);
-  font-size: clamp(15px, 1.8vw, 20px);
-  color: var(--text-muted);
-  margin-top: 2.5rem;
-  line-height: 1.8;
-  opacity: 0;
-  transition: opacity 2s var(--ease) 0.6s;
-}
-.hero__subtitle em {
-  color: var(--accent);
-  font-style: normal;
-}
-.hero__scroll-hint {
-  position: absolute;
-  bottom: 3rem;
-  left: 50%;
-  transform: translateX(-50%);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  color: var(--text-ghost);
-  opacity: 0;
-  transition: opacity 2s var(--ease) 1.5s;
-}
-.hero.visible .hero__title,
-.hero.visible .hero__subtitle,
-.hero.visible .hero__scroll-hint { opacity: 1; }
-
-/* ======================== */
-/* SCENE 2 — ARCHITECTURE   */
-/* ======================== */
-.architecture {
-  width: var(--corridor-mid);
-  margin: 0 auto;
-  padding: 0;
-}
-.architecture__grid {
-  display: grid;
-  grid-template-columns: 1fr 1.2fr;
-  gap: var(--space-lg);
-  align-items: start;
-  margin-top: var(--space-md);
-}
-.architecture__diagram {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-.arch-layer {
-  padding: 1.5rem 2rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  transition: border-color 0.8s var(--ease), background 0.8s var(--ease), box-shadow 0.8s var(--ease);
-  position: relative;
-}
-.arch-layer.active {
-  border-color: rgba(196, 149, 106, 0.3);
-  background: rgba(196, 149, 106, 0.03);
-  box-shadow: 0 0 40px rgba(196, 149, 106, 0.05);
-}
-.arch-layer__label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--text-ghost);
-  margin-bottom: 0.5rem;
-  transition: color 0.8s var(--ease);
-}
-.arch-layer.active .arch-layer__label { color: var(--accent); }
-.arch-layer__name {
-  font-family: var(--font-sans);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 0.25rem;
-}
-.arch-layer__desc {
-  font-size: 13px;
-  color: var(--text-muted);
-  line-height: 1.6;
-}
-.arch-layer__owner {
-  display: inline-block;
-  margin-top: 0.5rem;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  padding: 2px 8px;
-  border: 1px solid var(--border);
-  border-radius: 2px;
-  color: var(--text-ghost);
-}
-.arch-connector {
-  width: 1px;
-  height: 20px;
-  background: var(--border);
-  margin: 0 auto;
-}
-.arch-connector__label {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--text-ghost);
-  text-align: center;
-  padding: 4px 0;
-  letter-spacing: 0.05em;
-}
-.architecture__text {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-}
-.arch-text-block {
-  padding: 1.5rem 0;
-  border-bottom: 1px solid rgba(255,255,255,0.03);
-}
-.arch-text-block h4 {
-  font-family: var(--font-sans);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 0.5rem;
-}
-.arch-text-block p {
-  font-size: 14px;
-  color: var(--text-muted);
-  line-height: 1.8;
-}
+/* === ARCH DIAGRAM === */
+.arch-stack{display:flex;flex-direction:column;gap:0;width:100%}
+.arch-box{padding:1.2rem 1.8rem;border:1px solid var(--border);border-radius:var(--radius)}
+.arch-box__label{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-ghost);margin-bottom:.3rem}
+.arch-box__name{font-size:14px;font-weight:600;color:var(--text);margin-bottom:.15rem}
+.arch-box__desc{font-size:12px;color:var(--text-muted)}
+.arch-box__owner{font-family:var(--font-mono);font-size:9px;color:var(--text-ghost);margin-top:.4rem;display:inline-block;padding:1px 6px;border:1px solid var(--border);border-radius:2px}
+.arch-arrow{text-align:center;font-family:var(--font-mono);font-size:9px;color:var(--text-ghost);padding:6px 0;letter-spacing:.05em}
 
 /* === PAGE TYPES === */
-.page-types {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-}
-.page-type {
-  display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
-  padding: 0.5rem 0;
-}
-.page-type__name {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--accent);
-  white-space: nowrap;
-  letter-spacing: 0.02em;
-}
-.page-type__desc {
-  font-size: 13px;
-  color: var(--text-muted);
-  line-height: 1.5;
-}
+.ptypes{display:grid;grid-template-columns:1fr 1fr;gap:.4rem .5rem}
+.ptype{display:flex;align-items:baseline;gap:.6rem}
+.ptype b{font-family:var(--font-mono);font-size:11px;color:var(--accent);white-space:nowrap;font-weight:500}
+.ptype span{font-size:13px;color:var(--text-muted)}
 
 /* === DUAL INDEX === */
-.dual-index {
-  margin-top: var(--space-lg);
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-}
-.dual-index__side {
-  padding: 1.5rem 2rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-.dual-index__icon {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--accent);
-  margin-bottom: 0.75rem;
-  letter-spacing: 0.08em;
-}
-.dual-index__title {
-  font-family: var(--font-sans);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 0.5rem;
-}
-.dual-index__desc {
-  font-size: 13px;
-  color: var(--text-muted);
-  line-height: 1.6;
-}
+.dual{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem}
+.dual__card{padding:1.2rem 1.5rem;border:1px solid var(--border);border-radius:var(--radius)}
+.dual__card h4{font-family:var(--font-mono);font-size:11px;color:var(--accent);margin-bottom:.5rem;letter-spacing:.08em}
+.dual__card h5{font-size:14px;font-weight:600;color:var(--text);margin-bottom:.3rem}
+.dual__card p{font-size:12px;color:var(--text-muted);line-height:1.6}
 
-/* ====================== */
-/* SCENE 3 — INGEST        */
-/* ====================== */
-.ingest {
-  width: var(--corridor-narrow);
-  margin: 0 auto;
-  padding: 0;
-}
+/* === STEPS === */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+.step{padding:1.2rem;border:1px solid var(--border);border-radius:var(--radius)}
+.step__num{width:28px;height:28px;border:1px solid rgba(196,149,106,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:11px;color:var(--accent);margin-bottom:.75rem}
+.step h4{font-size:13px;font-weight:600;color:var(--text);margin-bottom:.25rem}
+.step p{font-size:12px;color:var(--text-muted);line-height:1.5}
 
-.ingest__flow {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.25rem;
-  margin-top: var(--space-md);
-}
-.ingest__step {
-  padding: 1.5rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  transition: border-color 0.5s var(--ease), background 0.5s var(--ease);
-  position: relative;
-}
-.ingest__step:hover {
-  border-color: rgba(196, 149, 106, 0.25);
-  background: rgba(196, 149, 106, 0.02);
-}
-.ingest__step-number {
-  width: 32px; height: 32px;
-  border: 1px solid rgba(196, 149, 106, 0.3);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--accent);
-  margin-bottom: 1rem;
-}
-.ingest__step-title {
-  font-family: var(--font-sans);
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 0.4rem;
-}
-.ingest__step-desc {
-  font-size: 13px;
-  color: var(--text-muted);
-  line-height: 1.6;
-}
-.ingest__cascade {
-  margin-top: var(--space-lg);
-  padding: 2rem 2.5rem;
-  border: 1px solid rgba(196, 149, 106, 0.15);
-  border-radius: var(--radius);
-  background: rgba(196, 149, 106, 0.02);
-}
-.ingest__cascade-title {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--accent);
-  margin-bottom: 1rem;
-}
-.ingest__cascade-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-.ingest__cascade-list li {
-  font-size: 14px;
-  color: var(--text-muted);
-  padding-left: 1.5rem;
-  position: relative;
-  line-height: 1.6;
-}
-.ingest__cascade-list li::before {
-  content: '→';
-  position: absolute;
-  left: 0;
-  color: var(--accent);
-}
+/* === CASCADE === */
+.cascade{padding:1.5rem 2rem;border:1px solid rgba(196,149,106,.12);border-radius:var(--radius);background:rgba(196,149,106,.015)}
+.cascade__title{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:.75rem}
+.cascade li{font-size:13px;color:var(--text-muted);padding:.35rem 0 .35rem 1.2rem;position:relative;line-height:1.5;list-style:none}
+.cascade li::before{content:'→';position:absolute;left:0;color:var(--accent)}
 
-/* ======================== */
-/* SCENE 4 — QUERY & LINT   */
-/* ======================== */
-.pivot {
-  width: var(--corridor-narrow);
-  margin: 0 auto;
-  padding: 0;
-}
-.pivot__split {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  margin-top: var(--space-md);
-}
-.pivot__side {
-  padding: 2rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-.pivot__side-label {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--accent);
-  margin-bottom: 1.25rem;
-}
-.pivot__side-title {
-  font-family: var(--font-sans);
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 1rem;
-}
-.pivot__flow-item {
-  padding: 0.6rem 0;
-  border-bottom: 1px solid rgba(255,255,255,0.03);
-  font-size: 13px;
-  color: var(--text-muted);
-  line-height: 1.6;
-  display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
-}
-.pivot__flow-item::before {
-  content: '▸';
-  color: var(--accent);
-  font-size: 10px;
-  flex-shrink: 0;
-}
-.pivot__pullquote {
-  margin-top: var(--space-lg);
-  padding: 2.5rem 3rem;
-  border-left: 2px solid var(--accent);
-  position: relative;
-}
-.pivot__pullquote-text {
-  font-family: var(--font-serif);
-  font-size: clamp(18px, 2.2vw, 26px);
-  color: var(--text);
-  line-height: 1.6;
-  font-weight: 300;
-}
-.pivot__pullquote-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--text-ghost);
-  margin-top: 1rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
+/* === SPLIT === */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+.split__side{padding:1.5rem;border:1px solid var(--border);border-radius:var(--radius)}
+.split__side h4{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:.75rem}
+.split__side h5{font-size:15px;font-weight:600;color:var(--text);margin-bottom:.75rem}
+.flow-item{padding:.4rem 0;font-size:12px;color:var(--text-muted);line-height:1.5;padding-left:1rem;position:relative;border-bottom:1px solid rgba(255,255,255,.02)}
+.flow-item::before{content:'▸';position:absolute;left:0;color:var(--accent);font-size:9px;top:.5rem}
 
-/* ======================== */
-/* SCENE 5 — EVIDENCE WALL  */
-/* ======================== */
-.evidence {
-  width: var(--corridor-narrow);
-  margin: 0 auto;
-  padding: 0;
-}
-.evidence__table-wrap {
-  margin-top: var(--space-md);
-  overflow-x: auto;
-}
-.evidence__table {
-  width: 100%;
-  border-collapse: collapse;
-}
-.evidence__table thead th {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  padding: 1rem 1.5rem;
-  text-align: left;
-  border-bottom: 1px solid var(--border);
-}
-.evidence__table thead th:nth-child(1) { color: var(--text-ghost); width: 25%; }
-.evidence__table thead th:nth-child(2) { color: var(--fog-blue); }
-.evidence__table thead th:nth-child(3) { color: var(--accent); }
-/* table rows visible by default in slide mode */
-.evidence__table td {
-  padding: 1rem 1.5rem;
-  font-size: 14px;
-  line-height: 1.6;
-  border-bottom: 1px solid rgba(255,255,255,0.025);
-  color: var(--text-muted);
-  vertical-align: top;
-}
-.evidence__table td:first-child {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-ghost);
-  letter-spacing: 0.02em;
-}
-.evidence__table td:nth-child(3) { color: var(--text); }
+/* === PULLQUOTE === */
+.pullquote{border-left:2px solid var(--accent);padding:1.5rem 2rem}
+.pullquote p{font-family:var(--font-serif);font-size:clamp(16px,2vw,22px);color:var(--text);line-height:1.6;font-weight:300}
+.pullquote cite{font-family:var(--font-mono);font-size:10px;color:var(--text-ghost);display:block;margin-top:.75rem;letter-spacing:.08em;font-style:normal;text-transform:uppercase}
 
-.evidence__memex {
-  margin-top: var(--space-lg);
-  text-align: center;
-  padding: 2rem;
-}
-.evidence__memex-quote {
-  font-family: var(--font-serif);
-  font-size: clamp(16px, 2vw, 22px);
-  font-weight: 300;
-  font-style: italic;
-  color: var(--text);
-  line-height: 1.6;
-  max-width: 600px;
-  margin: 0 auto;
-}
-.evidence__memex-attr {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--text-ghost);
-  margin-top: 1rem;
-  letter-spacing: 0.1em;
-}
+/* === TABLE === */
+.cmp-table{width:100%;border-collapse:collapse}
+.cmp-table th{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;padding:.75rem 1rem;text-align:left;border-bottom:1px solid var(--border)}
+.cmp-table th:nth-child(1){color:var(--text-ghost);width:22%}
+.cmp-table th:nth-child(2){color:var(--text-ghost)}
+.cmp-table th:nth-child(3){color:var(--accent)}
+.cmp-table td{padding:.75rem 1rem;font-size:13px;line-height:1.5;border-bottom:1px solid rgba(255,255,255,.02);color:var(--text-muted);vertical-align:top}
+.cmp-table td:first-child{font-family:var(--font-mono);font-size:11px;color:var(--text-ghost)}
+.cmp-table td:nth-child(3){color:var(--text)}
 
-/* ======================== */
-/* SCENE 6 — TOOLCHAIN      */
-/* ======================== */
-.toolchain {
-  width: var(--corridor-mid);
-  margin: 0 auto;
-  padding: 0;
-}
+/* === NODES === */
+.nodes{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+.node{padding:1.2rem;border:1px solid var(--border);border-radius:var(--radius);text-align:center;transition:border-color .4s}
+.node:hover{border-color:rgba(196,149,106,.25)}
+.node--primary{border-color:rgba(196,149,106,.2);background:rgba(196,149,106,.02)}
+.node__icon{font-size:22px;margin-bottom:.5rem;display:block}
+.node__name{font-size:14px;font-weight:600;color:var(--text);margin-bottom:.15rem}
+.node__role{font-family:var(--font-mono);font-size:10px;color:var(--text-muted)}
+.node__when{font-size:11px;color:var(--text-ghost);margin-top:.3rem}
 
-.toolchain__constellation {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.25rem;
-  margin-top: var(--space-md);
-}
-.toolchain__node {
-  padding: 1.5rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  text-align: center;
-  filter: saturate(0.8) brightness(0.95);
-  transition: filter 0.5s ease, border-color 0.5s ease, background 0.5s ease;
-}
-.toolchain__node:hover {
-  filter: saturate(1.2) brightness(1.05);
-  border-color: rgba(196, 149, 106, 0.3);
-  background: rgba(196, 149, 106, 0.02);
-}
-.toolchain__node--primary {
-  border-color: rgba(196, 149, 106, 0.2);
-  background: rgba(196, 149, 106, 0.03);
-  filter: saturate(1) brightness(1);
-}
-.toolchain__node-icon {
-  font-size: 28px;
-  margin-bottom: 0.75rem;
-  display: block;
-}
-.toolchain__node-name {
-  font-family: var(--font-sans);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 0.25rem;
-}
-.toolchain__node-role {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-muted);
-}
-.toolchain__node-when {
-  font-size: 12px;
-  color: var(--text-ghost);
-  margin-top: 0.5rem;
-  line-height: 1.5;
-}
+/* === TIMELINE === */
+.timeline{display:flex;justify-content:space-between;align-items:center;position:relative;padding:2rem 1rem}
+.timeline::before{content:'';position:absolute;top:50%;left:1rem;right:1rem;height:1px;background:var(--border)}
+.timeline__pt{position:relative;text-align:center;z-index:1;background:var(--bg);padding:0 .75rem}
+.timeline__dot{width:7px;height:7px;border-radius:50%;background:var(--accent);margin:0 auto .5rem}
+.timeline__year{font-family:var(--font-mono);font-size:11px;color:var(--accent)}
+.timeline__label{font-size:11px;color:var(--text-muted);margin-top:.15rem}
 
-.toolchain__timeline {
-  margin-top: var(--space-lg);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: relative;
-  padding: 2.5rem 2rem;
-}
-.toolchain__timeline::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 2rem; right: 2rem;
-  height: 1px;
-  background: var(--border);
-}
-.toolchain__milestone {
-  position: relative;
-  text-align: center;
-  z-index: 1;
-  background: var(--bg);
-  padding: 0 1rem;
-}
-.toolchain__milestone-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--accent);
-  margin: 0 auto 0.75rem;
-}
-.toolchain__milestone-year {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--accent);
-  letter-spacing: 0.05em;
-}
-.toolchain__milestone-label {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-top: 0.25rem;
-  max-width: 120px;
-}
+/* === INVITATION STEPS === */
+.inv-steps{max-width:520px;margin:0 auto}
+.inv-step{display:flex;gap:1.2rem;padding:1rem 0;border-bottom:1px solid rgba(255,255,255,.03)}
+.inv-step__ring{width:28px;height:28px;border:1px solid rgba(196,149,106,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:10px;color:var(--accent);flex-shrink:0;margin-top:2px}
+.inv-step h4{font-size:14px;font-weight:600;color:var(--text);margin-bottom:.15rem}
+.inv-step p{font-size:13px;color:var(--text-muted);line-height:1.6}
 
-/* ======================== */
-/* SCENE 7 — INVITATION     */
-/* ======================== */
-.invitation {
-  width: var(--corridor-wide);
-  margin: 0 auto;
-  padding: 0;
-}
+/* === LOOP === */
+.loop{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;position:relative;width:100%}
+.loop__fog{position:absolute;width:450px;height:450px;background:radial-gradient(circle,rgba(196,149,106,.08),transparent 70%);filter:blur(60px);pointer-events:none}
+.loop__ring{width:clamp(200px,26vw,340px);height:clamp(200px,26vw,340px);border:1px solid rgba(196,149,106,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;padding:2rem;position:relative;z-index:1}
+.loop__ring::before{content:'';position:absolute;inset:-22px;border:1px solid rgba(196,149,106,.05);border-radius:50%}
+.loop__ring::after{content:'';position:absolute;inset:-44px;border:1px solid rgba(196,149,106,.02);border-radius:50%}
+.loop__ring p{font-family:var(--font-serif);font-size:clamp(13px,1.6vw,18px);color:var(--text);line-height:1.7;font-weight:300}
 
-.invitation__steps {
-  max-width: 580px;
-  margin: var(--space-md) auto 0;
-}
-.invitation__step {
-  display: flex;
-  gap: 1.5rem;
-  padding: 1.25rem 0;
-  border-bottom: 1px solid rgba(255,255,255,0.035);
-}
-.invitation__step-ring {
-  width: 32px; height: 32px;
-  border: 1px solid rgba(196, 149, 106, 0.3);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--accent);
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-.invitation__step-text h4 {
-  font-family: var(--font-sans);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 0.25rem;
-}
-.invitation__step-text p {
-  font-size: 14px;
-  color: var(--text-muted);
-  line-height: 1.7;
-}
-.invitation__coda {
-  margin-top: var(--space-lg);
-  text-align: center;
-}
-.invitation__coda-text {
-  font-family: var(--font-serif);
-  font-size: clamp(18px, 2.2vw, 24px);
-  font-weight: 300;
-  color: var(--text);
-  font-style: italic;
-  line-height: 1.6;
-}
-.invitation__coda-sub {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-ghost);
-  margin-top: 0.75rem;
-  letter-spacing: 0.08em;
-}
+/* === FAREWELL === */
+.farewell{text-align:center}
+.farewell hr{width:40px;height:1px;border:none;background:var(--border);margin:0 auto 1rem}
+.farewell p{font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;color:var(--text-ghost);text-transform:uppercase}
 
-/* ======================== */
-/* SCENE 8 — THE LOOP       */
-/* ======================== */
-.loop {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  position: relative;
-  padding: 2rem 5%;
+/* === RESPONSIVE === */
+@media(max-width:768px){
+  .slide__body{width:92%}
+  .steps{grid-template-columns:1fr 1fr}
+  .split,.dual{grid-template-columns:1fr}
+  .nodes{grid-template-columns:1fr 1fr}
+  .ptypes{grid-template-columns:1fr}
+  .dots{right:.75rem}
 }
-/* loop entrance handled by slide transition */
-
-.loop__fog {
-  position: absolute;
-  width: 500px; height: 500px;
-  background: radial-gradient(circle, rgba(196, 149, 106, 0.08), transparent 70%);
-  filter: blur(60px);
-  z-index: 0;
-  pointer-events: none;
+@media(max-width:480px){
+  .steps{grid-template-columns:1fr}
+  .nodes{grid-template-columns:1fr}
+  .timeline{flex-direction:column;gap:1.5rem;align-items:flex-start}
+  .timeline::before{display:none}
 }
-.loop__ring {
-  width: clamp(220px, 28vw, 380px);
-  height: clamp(220px, 28vw, 380px);
-  border: 1px solid rgba(196, 149, 106, 0.15);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2.5rem;
-  position: relative;
-  z-index: 1;
-}
-.loop__ring::before {
-  content: '';
-  position: absolute;
-  inset: -25px;
-  border: 1px solid rgba(196, 149, 106, 0.05);
-  border-radius: 50%;
-}
-.loop__ring::after {
-  content: '';
-  position: absolute;
-  inset: -50px;
-  border: 1px solid rgba(196, 149, 106, 0.02);
-  border-radius: 50%;
-}
-.loop__quote {
-  font-family: var(--font-serif);
-  font-size: clamp(14px, 1.8vw, 20px);
-  color: var(--text);
-  line-height: 1.7;
-  font-weight: 300;
-}
-
-/* ======================== */
-/* SCENE 9 — FOOTER         */
-/* ======================== */
-.farewell-slide {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.farewell {
-  text-align: center;
-  padding: 2rem;
-}
-.farewell__line {
-  width: 40px;
-  height: 1px;
-  background: var(--border);
-  margin: 0 auto var(--space-sm);
-}
-.farewell__text {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  color: var(--text-ghost);
-  text-transform: uppercase;
-}
-
-/* ======================== */
-/* RESPONSIVE               */
-/* ======================== */
-@media (max-width: 768px) {
-  :root {
-    --corridor-wide: 92%;
-    --corridor-mid: 90%;
-    --corridor-narrow: 88%;
-    --space-xl: 6rem;
-    --space-lg: 4rem;
-  }
-  .slide-nav { right: 1rem; }
-  .slide-counter { right: 1rem; bottom: 1rem; }
-  .key-hint { display: none; }
-  .architecture__grid { grid-template-columns: 1fr; }
-  .architecture__diagram { position: relative; top: auto; }
-  .ingest__flow { grid-template-columns: 1fr; }
-  .pivot__split { grid-template-columns: 1fr; }
-  .pivot__side { clip-path: none !important; }
-  .toolchain__constellation { grid-template-columns: 1fr 1fr; }
-  .dual-index { grid-template-columns: 1fr; }
-}
-@media (max-width: 480px) {
-  .toolchain__constellation { grid-template-columns: 1fr; }
-  .toolchain__timeline { flex-direction: column; gap: 2rem; align-items: flex-start; }
-  .toolchain__timeline::before { display: none; }
-}
-
-/* === REDUCED MOTION === */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
-  }
-  .slide { transition: none; }
-  .hero__title, .hero__subtitle, .hero__scroll-hint { opacity: 1; }
+@media(prefers-reduced-motion:reduce){
+  .slide{transition:none}
 }
 </style>
 </head>
 <body>
 
-<!-- SLIDE NAV DOTS -->
-<nav class="slide-nav" id="slideNav" aria-label="章節導覽"></nav>
-<div class="slide-counter"><span class="slide-counter__current" id="counterCurrent">1</span> / <span id="counterTotal">9</span></div>
-<div class="key-hint" id="keyHint">↑ ↓ 切換頁面</div>
+<nav class="dots" id="dots"></nav>
+<div class="counter"><b id="cur">1</b> / <span id="tot"></span></div>
+<div class="hint" id="hint">↑ ↓ 切換頁面</div>
 
-<!-- SLIDES CONTAINER -->
-<div class="slides" id="slides">
-
-<!-- SLIDE 1: HERO -->
-<div class="slide active" data-slide="0">
-<section class="hero" id="hero" data-scene="1">
-  <div class="hero__fog-layer hero__fog-1"></div>
-  <div class="hero__fog-layer hero__fog-2"></div>
-  <div class="hero__fog-layer hero__fog-3"></div>
-  <div class="hero__ring"></div>
-  <div class="hero__vignette"></div>
-  <div class="hero__content">
-    <h1 class="hero__title">如果 LLM<br>幫你維護知識庫？</h1>
-    <p class="hero__subtitle">知識編譯一次，持續更新。<br>查詢時只需讀取<em>已編譯的成果</em>。</p>
+<!-- 1. HERO -->
+<div class="slide active" data-s="0">
+  <div class="hero">
+    <div class="hero__fog hero__fog--1"></div>
+    <div class="hero__fog hero__fog--2"></div>
+    <div class="hero__ring"></div>
+    <div class="hero__vignette"></div>
+    <h1>如果 LLM<br>幫你維護知識庫？</h1>
+    <p>知識編譯一次，持續更新。<br>查詢時只需讀取<em>已編譯的成果</em>。</p>
   </div>
-  <div class="hero__scroll-hint">↓</div>
-</section>
 </div>
 
-<!-- SLIDE 2: ARCHITECTURE -->
-<div class="slide slide--scrollable" data-slide="1">
-<div class="slide__inner">
-<section class="architecture" id="architecture" data-scene="2">
-  <div class="section-label">第二章 — 架構全景</div>
-  <h2 class="section-title">三層架構</h2>
-  <p class="section-desc">每層有明確的擁有者和不變性。LLM 不是通用聊天機器人——它是有紀律的維護者。</p>
-
-  <div class="architecture__grid">
-    <div class="architecture__diagram">
-      <div class="arch-layer active" data-layer="interaction">
-        <div class="arch-layer__label">使用者互動層</div>
-        <div class="arch-layer__name">Ingest / Query / Lint</div>
-        <div class="arch-layer__desc">三大操作定義所有行為</div>
-        <span class="arch-layer__owner">擁有者：人類</span>
+<!-- 2. 三層架構 -->
+<div class="slide" data-s="1">
+  <div class="slide__body">
+    <div class="label">第二章 — 架構全景</div>
+    <div class="title">三層架構</div>
+    <div class="arch-stack">
+      <div class="arch-box">
+        <div class="arch-box__label">使用者互動層</div>
+        <div class="arch-box__name">Ingest / Query / Lint</div>
+        <div class="arch-box__desc">三大操作定義所有行為</div>
+        <span class="arch-box__owner">擁有者：人類</span>
       </div>
-      <div class="arch-connector"><div class="arch-connector__label">定義行為 ↓</div></div>
-      <div class="arch-layer" data-layer="schema">
-        <div class="arch-layer__label">Schema 層</div>
-        <div class="arch-layer__name">CLAUDE.md / AGENTS.md</div>
-        <div class="arch-layer__desc">結構約定、格式規範、工作流定義</div>
-        <span class="arch-layer__owner">擁有者：人 + LLM 共同</span>
+      <div class="arch-arrow">定義行為 ↓</div>
+      <div class="arch-box">
+        <div class="arch-box__label">Schema 層</div>
+        <div class="arch-box__name">CLAUDE.md / AGENTS.md</div>
+        <div class="arch-box__desc">結構約定、格式規範、工作流定義</div>
+        <span class="arch-box__owner">擁有者：人 + LLM</span>
       </div>
-      <div class="arch-connector"><div class="arch-connector__label">遵循規則 ↓</div></div>
-      <div class="arch-layer" data-layer="wiki">
-        <div class="arch-layer__label">Wiki 層</div>
-        <div class="arch-layer__name">實體頁 / 概念頁 / 摘要頁 / 比較頁</div>
-        <div class="arch-layer__desc">LLM 寫入，人類閱讀</div>
-        <span class="arch-layer__owner">擁有者：LLM</span>
+      <div class="arch-arrow">遵循規則 ↓</div>
+      <div class="arch-box">
+        <div class="arch-box__label">Wiki 層</div>
+        <div class="arch-box__name">實體頁 / 概念頁 / 摘要頁 / 比較頁</div>
+        <div class="arch-box__desc">LLM 寫入，人類閱讀</div>
+        <span class="arch-box__owner">擁有者：LLM</span>
       </div>
-      <div class="arch-connector"><div class="arch-connector__label">讀取（不修改）↓</div></div>
-      <div class="arch-layer" data-layer="raw">
-        <div class="arch-layer__label">Raw Sources 層</div>
-        <div class="arch-layer__name">文章、論文、圖片、資料檔</div>
-        <div class="arch-layer__desc">不可變真相，LLM 只讀不寫</div>
-        <span class="arch-layer__owner">擁有者：人類策展</span>
-      </div>
-    </div>
-
-    <div class="architecture__text">
-      <div class="arch-text-block">
-        <h4>職責分離</h4>
-        <p>每層擁有者明確。Raw Sources 永不被 LLM 修改，保持真相。Wiki 層只被 LLM 寫入，人只閱讀。</p>
-      </div>
-      <div class="arch-text-block">
-        <h4>六種頁面類型</h4>
-        <div class="page-types">
-          <div class="page-type"><span class="page-type__name">摘要頁</span><span class="page-type__desc">單一來源的重點摘錄</span></div>
-          <div class="page-type"><span class="page-type__name">實體頁</span><span class="page-type__desc">人物／組織／概念的持久頁面</span></div>
-          <div class="page-type"><span class="page-type__name">概念頁</span><span class="page-type__desc">跨來源的主題彙整</span></div>
-          <div class="page-type"><span class="page-type__name">比較頁</span><span class="page-type__desc">兩個以上項目的結構化對比</span></div>
-          <div class="page-type"><span class="page-type__name">綜合頁</span><span class="page-type__desc">高層次的洞察與趨勢</span></div>
-          <div class="page-type"><span class="page-type__name">總覽頁</span><span class="page-type__desc">wiki 的整體摘要</span></div>
-        </div>
-      </div>
-      <div class="arch-text-block">
-        <h4>Schema 驅動</h4>
-        <p>Schema 讓 LLM 成為有紀律的維護者，而非通用聊天機器人。它定義頁面類型、命名慣例、工作流步驟，隨使用不斷演化。</p>
+      <div class="arch-arrow">讀取（不修改）↓</div>
+      <div class="arch-box">
+        <div class="arch-box__label">Raw Sources 層</div>
+        <div class="arch-box__name">文章、論文、圖片、資料檔</div>
+        <div class="arch-box__desc">不可變真相，LLM 只讀不寫</div>
+        <span class="arch-box__owner">擁有者：人類策展</span>
       </div>
     </div>
   </div>
+</div>
 
-  <div class="dual-index">
-    <div class="dual-index__side">
-      <div class="dual-index__icon">index.md</div>
-      <div class="dual-index__title">空間維度</div>
-      <div class="dual-index__desc">「wiki 裡有什麼」— 按類別分組的內容目錄。查詢時的第一站，每頁一行：連結 + 摘要。</div>
+<!-- 3. 六種頁面 + 雙元索引 -->
+<div class="slide" data-s="2">
+  <div class="slide__body">
+    <div class="label">第三章 — 核心資料結構</div>
+    <div class="title">六種頁面類型</div>
+    <div class="ptypes">
+      <div class="ptype"><b>摘要頁</b><span>單一來源的重點摘錄</span></div>
+      <div class="ptype"><b>實體頁</b><span>人物／組織的持久頁面</span></div>
+      <div class="ptype"><b>概念頁</b><span>跨來源的主題彙整</span></div>
+      <div class="ptype"><b>比較頁</b><span>結構化對比</span></div>
+      <div class="ptype"><b>綜合頁</b><span>高層次洞察與趨勢</span></div>
+      <div class="ptype"><b>總覽頁</b><span>wiki 的整體摘要</span></div>
     </div>
-    <div class="dual-index__side">
-      <div class="dual-index__icon">log.md</div>
-      <div class="dual-index__title">時間維度</div>
-      <div class="dual-index__desc">「wiki 怎麼變的」— Append-only 時間線。追蹤每次操作觸及的頁面，避免重複工作。</div>
+    <div class="dual">
+      <div class="dual__card">
+        <h4>index.md</h4>
+        <h5>空間維度</h5>
+        <p>「wiki 裡有什麼」— 按類別分組的內容目錄，查詢時的第一站。</p>
+      </div>
+      <div class="dual__card">
+        <h4>log.md</h4>
+        <h5>時間維度</h5>
+        <p>「wiki 怎麼變的」— Append-only 時間線，追蹤每次操作。</p>
+      </div>
     </div>
   </div>
-</section>
-</div></div>
+</div>
 
-<!-- SLIDE 3: INGEST -->
-<div class="slide slide--scrollable" data-slide="2">
-<div class="slide__inner">
-<section class="ingest" id="ingest" data-scene="3">
-  <div class="section-label">第四章 — 核心流程</div>
-  <h2 class="section-title">Ingest：知識的編譯</h2>
-  <p class="section-desc">Ingest 不只是「存檔」。單一來源可能觸發 10–15 個 wiki 頁面的更新。</p>
-
-  <div class="ingest__flow">
-    <div class="ingest__step">
-      <div class="ingest__step-number">1</div>
-      <div class="ingest__step-title">加入來源</div>
-      <div class="ingest__step-desc">將文件放入 raw sources 目錄。可用 Web Clipper 一鍵擷取。</div>
-    </div>
-    <div class="ingest__step">
-      <div class="ingest__step-number">2</div>
-      <div class="ingest__step-title">LLM 讀取</div>
-      <div class="ingest__step-desc">閱讀全文，提取關鍵資訊、主張、數據。</div>
-    </div>
-    <div class="ingest__step">
-      <div class="ingest__step-number">3</div>
-      <div class="ingest__step-title">討論重點</div>
-      <div class="ingest__step-desc">使用者引導強調什麼、忽略什麼。判斷讓 wiki 更有價值。</div>
-    </div>
-    <div class="ingest__step">
-      <div class="ingest__step-number">4</div>
-      <div class="ingest__step-title">級聯更新</div>
-      <div class="ingest__step-desc">建立摘要頁、更新實體頁、概念頁、標記矛盾、加入交叉引用。</div>
-    </div>
-    <div class="ingest__step">
-      <div class="ingest__step-number">5</div>
-      <div class="ingest__step-title">更新索引</div>
-      <div class="ingest__step-desc">在 index.md 加入新條目，更新已修改頁面的摘要。</div>
-    </div>
-    <div class="ingest__step">
-      <div class="ingest__step-number">6</div>
-      <div class="ingest__step-title">記錄日誌</div>
-      <div class="ingest__step-desc">在 log.md 追加記錄，列出所有被觸及的頁面。</div>
+<!-- 4. Ingest 六步驟 -->
+<div class="slide" data-s="3">
+  <div class="slide__body">
+    <div class="label">第四章 — 核心流程</div>
+    <div class="title">Ingest：知識的編譯</div>
+    <div class="desc">單一來源可能觸發 10–15 個 wiki 頁面的更新。</div>
+    <div class="steps">
+      <div class="step"><div class="step__num">1</div><h4>加入來源</h4><p>將文件放入 raw sources 目錄</p></div>
+      <div class="step"><div class="step__num">2</div><h4>LLM 讀取</h4><p>閱讀全文，提取關鍵資訊</p></div>
+      <div class="step"><div class="step__num">3</div><h4>討論重點</h4><p>使用者引導強調與忽略</p></div>
+      <div class="step"><div class="step__num">4</div><h4>級聯更新</h4><p>摘要頁、實體頁、概念頁、交叉引用</p></div>
+      <div class="step"><div class="step__num">5</div><h4>更新索引</h4><p>在 index.md 加入新條目</p></div>
+      <div class="step"><div class="step__num">6</div><h4>記錄日誌</h4><p>在 log.md 追加操作紀錄</p></div>
     </div>
   </div>
+</div>
 
-  <div class="ingest__cascade">
-    <div class="ingest__cascade-title">級聯更新的一次觸發</div>
-    <ul class="ingest__cascade-list">
-      <li>建立該來源的摘要頁</li>
-      <li>掃描既有 wiki，找到所有相關頁面</li>
-      <li>更新實體頁（新資訊、修正舊資訊）</li>
-      <li>更新概念頁（加入新觀點或證據）</li>
-      <li>標記任何矛盾（新來源 vs 舊來源）</li>
-      <li>加入交叉引用連結</li>
-    </ul>
-  </div>
-</section>
-</div></div>
-
-<!-- SLIDE 4: QUERY & LINT -->
-<div class="slide slide--scrollable" data-slide="3">
-<div class="slide__inner">
-<section class="pivot" id="pivot" data-scene="4">
-  <div class="section-label">第五章 — 進階流程</div>
-  <h2 class="section-title">Query 與 Lint</h2>
-  <p class="section-desc">知識不只是存入，還要能取出、能自我修復。</p>
-
-  <div class="pivot__split">
-    <div class="pivot__side">
-      <div class="pivot__side-label">Query — 知識提取</div>
-      <div class="pivot__side-title">問答產生新知識</div>
-      <div class="pivot__flow-item">讀取 index.md 確定相關頁面範圍</div>
-      <div class="pivot__flow-item">讀取 3–10 頁相關 wiki 頁面</div>
-      <div class="pivot__flow-item">綜合答案，附引用來源頁面</div>
-      <div class="pivot__flow-item">值得保留？存為新 wiki 頁面</div>
-      <div class="pivot__flow-item">更新 index.md + log.md</div>
-    </div>
-    <div class="pivot__side">
-      <div class="pivot__side-label">Lint — 健康檢查</div>
-      <div class="pivot__side-title">wiki 的自我修復</div>
-      <div class="pivot__flow-item">偵測矛盾：新來源推翻舊主張？</div>
-      <div class="pivot__flow-item">過時聲明：已被更新資料取代？</div>
-      <div class="pivot__flow-item">孤兒頁面：無入站連結的頁面？</div>
-      <div class="pivot__flow-item">缺失引用：應有交叉連結但沒有？</div>
-      <div class="pivot__flow-item">建議下一步該研究什麼</div>
+<!-- 5. 級聯更新細節 -->
+<div class="slide" data-s="4">
+  <div class="slide__body">
+    <div class="label">第四章 — 核心流程</div>
+    <div class="title">級聯更新的一次觸發</div>
+    <div class="desc">Step 4 是最關鍵的步驟。一個新來源會引發整個 wiki 的連鎖反應。</div>
+    <div class="cascade">
+      <div class="cascade__title">當一篇新來源被 Ingest 時</div>
+      <ul>
+        <li>建立該來源的摘要頁</li>
+        <li>掃描既有 wiki，找到所有相關頁面</li>
+        <li>更新實體頁（新資訊、修正舊資訊）</li>
+        <li>更新概念頁（加入新觀點或證據）</li>
+        <li>標記任何矛盾（新來源 vs 舊來源）</li>
+        <li>加入交叉引用連結</li>
+        <li>更新 index.md + log.md</li>
+      </ul>
     </div>
   </div>
+</div>
 
-  <div class="pivot__pullquote">
-    <div class="pivot__pullquote-text">一次比較分析、一個深度問答、一個發現的連結——這些不該消失在聊天歷史中。回填到 wiki 後，它們成為未來查詢可引用的持久知識。</div>
-    <div class="pivot__pullquote-label">知識複利</div>
+<!-- 6. Query & Lint -->
+<div class="slide" data-s="5">
+  <div class="slide__body">
+    <div class="label">第五章 — 進階流程</div>
+    <div class="title">Query 與 Lint</div>
+    <div class="split">
+      <div class="split__side">
+        <h4>Query — 知識提取</h4>
+        <h5>問答產生新知識</h5>
+        <div class="flow-item">讀取 index.md 確定相關頁面</div>
+        <div class="flow-item">讀取 3–10 頁相關 wiki 頁面</div>
+        <div class="flow-item">綜合答案，附引用來源</div>
+        <div class="flow-item">值得保留？存為新 wiki 頁面</div>
+      </div>
+      <div class="split__side">
+        <h4>Lint — 健康檢查</h4>
+        <h5>wiki 的自我修復</h5>
+        <div class="flow-item">偵測矛盾：新舊主張衝突？</div>
+        <div class="flow-item">過時聲明：已被取代？</div>
+        <div class="flow-item">孤兒頁面：無入站連結？</div>
+        <div class="flow-item">建議下一步該研究什麼</div>
+      </div>
+    </div>
   </div>
-</section>
-</div></div>
+</div>
 
-<!-- SLIDE 5: EVIDENCE WALL -->
-<div class="slide slide--scrollable" data-slide="4">
-<div class="slide__inner">
-<section class="evidence" id="evidence" data-scene="5">
-  <div class="section-label">第六章 — 關鍵設計決策</div>
-  <h2 class="section-title">為什麼不是 RAG？</h2>
-  <p class="section-desc">知識編譯與即時檢索，根本性的差異。</p>
+<!-- 7. 知識複利 -->
+<div class="slide" data-s="6">
+  <div class="slide__body" style="display:flex;align-items:center;justify-content:center;max-height:none">
+    <div class="pullquote">
+      <p>一次比較分析、一個深度問答、一個發現的連結——這些不該消失在聊天歷史中。回填到 wiki 後，它們成為未來查詢可引用的持久知識。</p>
+      <cite>知識複利</cite>
+    </div>
+  </div>
+</div>
 
-  <div class="evidence__table-wrap">
-    <table class="evidence__table">
-      <thead>
-        <tr>
-          <th>維度</th>
-          <th>RAG</th>
-          <th>LLM Wiki</th>
-        </tr>
-      </thead>
+<!-- 8. RAG vs Wiki -->
+<div class="slide" data-s="7">
+  <div class="slide__body">
+    <div class="label">第六章 — 關鍵設計決策</div>
+    <div class="title">為什麼不是 RAG？</div>
+    <table class="cmp-table">
+      <thead><tr><th>維度</th><th>RAG</th><th>LLM Wiki</th></tr></thead>
       <tbody>
         <tr><td>知識狀態</td><td>每次從零開始</td><td>持久累積</td></tr>
         <tr><td>交叉引用</td><td>查詢時才拼湊</td><td>已預先建立</td></tr>
@@ -1176,309 +352,164 @@ body::after {
       </tbody>
     </table>
   </div>
-
-  <div class="evidence__memex">
-    <p class="evidence__memex-quote">維護知識庫的繁瑣部分不是閱讀或思考——是記帳。人類放棄 wiki 是因為維護成本成長快於價值。LLM 不會厭倦。</p>
-    <p class="evidence__memex-attr">— Vannevar Bush 的 Memex 願景，由 LLM 實現</p>
-  </div>
-</section>
-</div></div>
-
-<!-- SLIDE 6: TOOLCHAIN -->
-<div class="slide slide--scrollable" data-slide="5">
-<div class="slide__inner">
-<section class="toolchain" id="toolchain" data-scene="6">
-  <div class="section-label">第七章 — 工具鏈</div>
-  <h2 class="section-title">生態系統</h2>
-  <p class="section-desc">核心工具與可選擴展，組成 LLM Wiki 的運作環境。</p>
-
-  <div class="toolchain__constellation">
-    <div class="toolchain__node">
-      <span class="toolchain__node-icon">⌨</span>
-      <div class="toolchain__node-name">LLM Agent</div>
-      <div class="toolchain__node-role">知識維護者</div>
-      <div class="toolchain__node-when">Claude Code / Codex / OpenCode</div>
-    </div>
-    <div class="toolchain__node toolchain__node--primary">
-      <span class="toolchain__node-icon">◈</span>
-      <div class="toolchain__node-name">Obsidian</div>
-      <div class="toolchain__node-role">人類的 IDE</div>
-      <div class="toolchain__node-when">瀏覽、Graph View、插件生態</div>
-    </div>
-    <div class="toolchain__node">
-      <span class="toolchain__node-icon">⎇</span>
-      <div class="toolchain__node-name">Git</div>
-      <div class="toolchain__node-role">版本控制</div>
-      <div class="toolchain__node-when">歷史追蹤、分支、協作</div>
-    </div>
-    <div class="toolchain__node">
-      <span class="toolchain__node-icon">✂</span>
-      <div class="toolchain__node-name">Web Clipper</div>
-      <div class="toolchain__node-role">來源擷取</div>
-      <div class="toolchain__node-when">瀏覽器→markdown 一鍵轉換</div>
-    </div>
-    <div class="toolchain__node">
-      <span class="toolchain__node-icon">▦</span>
-      <div class="toolchain__node-name">Dataview</div>
-      <div class="toolchain__node-role">動態查詢</div>
-      <div class="toolchain__node-when">查詢 frontmatter，產生動態表格</div>
-    </div>
-    <div class="toolchain__node">
-      <span class="toolchain__node-icon">⌕</span>
-      <div class="toolchain__node-name">qmd</div>
-      <div class="toolchain__node-role">本地搜尋</div>
-      <div class="toolchain__node-when">BM25 + 向量搜尋，超過 100 來源時需要</div>
-    </div>
-  </div>
-
-  <div class="toolchain__timeline">
-    <div class="toolchain__milestone">
-      <div class="toolchain__milestone-dot"></div>
-      <div class="toolchain__milestone-year">1945</div>
-      <div class="toolchain__milestone-label">Memex 願景</div>
-    </div>
-    <div class="toolchain__milestone">
-      <div class="toolchain__milestone-dot"></div>
-      <div class="toolchain__milestone-year">1991</div>
-      <div class="toolchain__milestone-label">WWW 誕生</div>
-    </div>
-    <div class="toolchain__milestone">
-      <div class="toolchain__milestone-dot"></div>
-      <div class="toolchain__milestone-year">2024+</div>
-      <div class="toolchain__milestone-label">LLM Wiki</div>
-    </div>
-  </div>
-</section>
-</div></div>
-
-<!-- SLIDE 7: INVITATION -->
-<div class="slide slide--scrollable" data-slide="6">
-<div class="slide__inner">
-<section class="invitation" id="invitation" data-scene="7">
-  <div class="section-label" style="text-align:center">第八章 — 實踐指南</div>
-  <h2 class="section-title" style="text-align:center">如何開始</h2>
-
-  <div class="invitation__steps">
-    <div class="invitation__step">
-      <div class="invitation__step-ring">1</div>
-      <div class="invitation__step-text">
-        <h4>選擇領域和工具</h4>
-        <p>決定主題（研究、讀書、個人成長），選擇 LLM agent 和瀏覽器。</p>
-      </div>
-    </div>
-    <div class="invitation__step">
-      <div class="invitation__step-ring">2</div>
-      <div class="invitation__step-text">
-        <h4>建立基本結構</h4>
-        <p>建立 raw/ 和 wiki/ 目錄，初始化 index.md 和 log.md，加入 git 版控。</p>
-      </div>
-    </div>
-    <div class="invitation__step">
-      <div class="invitation__step-ring">3</div>
-      <div class="invitation__step-text">
-        <h4>撰寫 Schema</h4>
-        <p>與 LLM 共同建立初版 CLAUDE.md，定義頁面類型、命名慣例、工作流步驟。</p>
-      </div>
-    </div>
-    <div class="invitation__step">
-      <div class="invitation__step-ring">4</div>
-      <div class="invitation__step-text">
-        <h4>開始 Ingest</h4>
-        <p>從一個來源開始，逐步建立。觀察 LLM 如何處理，根據需要調整 Schema。</p>
-      </div>
-    </div>
-    <div class="invitation__step">
-      <div class="invitation__step-ring">5</div>
-      <div class="invitation__step-text">
-        <h4>定期 Lint</h4>
-        <p>每週或每 10 個來源後，請 LLM 做健康檢查。修復問題，建議下一步研究方向。</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="invitation__coda">
-    <p class="invitation__coda-text">你是策展人，不是作者。<br>你選擇來源和方向，LLM 做記帳。</p>
-    <p class="invitation__coda-sub">一切都是可選的 — 從最小可行 wiki 開始</p>
-  </div>
-</section>
-</div></div>
-
-<!-- SLIDE 8: THE LOOP -->
-<div class="slide" data-slide="7">
-<section class="loop" id="loop" data-scene="8">
-  <div class="loop__fog"></div>
-  <div class="loop__ring">
-    <p class="loop__quote">Wiki 是持久化的<br>編譯產物，<br>不是即時的<br>檢索結果。</p>
-  </div>
-</section>
 </div>
 
-<!-- SLIDE 9: FOOTER -->
-<div class="slide" data-slide="8">
-<section class="farewell-slide" data-scene="9">
+<!-- 9. Memex -->
+<div class="slide" data-s="8">
+  <div class="slide__body" style="display:flex;align-items:center;justify-content:center;max-height:none">
+    <div class="pullquote">
+      <p>維護知識庫的繁瑣部分不是閱讀或思考——是記帳。人類放棄 wiki 是因為維護成本成長快於價值。LLM 不會厭倦。</p>
+      <cite>Vannevar Bush 的 Memex 願景，由 LLM 實現</cite>
+    </div>
+  </div>
+</div>
+
+<!-- 10. 工具鏈 -->
+<div class="slide" data-s="9">
+  <div class="slide__body">
+    <div class="label">第七章 — 工具鏈</div>
+    <div class="title">生態系統</div>
+    <div class="nodes">
+      <div class="node"><span class="node__icon">⌨</span><div class="node__name">LLM Agent</div><div class="node__role">知識維護者</div><div class="node__when">Claude Code / Codex</div></div>
+      <div class="node node--primary"><span class="node__icon">◈</span><div class="node__name">Obsidian</div><div class="node__role">人類的 IDE</div><div class="node__when">瀏覽、Graph View</div></div>
+      <div class="node"><span class="node__icon">⎇</span><div class="node__name">Git</div><div class="node__role">版本控制</div><div class="node__when">歷史、分支、協作</div></div>
+      <div class="node"><span class="node__icon">✂</span><div class="node__name">Web Clipper</div><div class="node__role">來源擷取</div><div class="node__when">瀏覽器→markdown</div></div>
+      <div class="node"><span class="node__icon">▦</span><div class="node__name">Dataview</div><div class="node__role">動態查詢</div><div class="node__when">查詢 frontmatter</div></div>
+      <div class="node"><span class="node__icon">⌕</span><div class="node__name">qmd</div><div class="node__role">本地搜尋</div><div class="node__when">BM25 + 向量搜尋</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 11. 時間軸 -->
+<div class="slide" data-s="10">
+  <div class="slide__body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;max-height:none">
+    <div class="label" style="text-align:center">歷史脈絡</div>
+    <div class="title" style="text-align:center">從 Memex 到 LLM Wiki</div>
+    <div class="timeline" style="width:100%;max-width:600px;margin-top:2rem">
+      <div class="timeline__pt"><div class="timeline__dot"></div><div class="timeline__year">1945</div><div class="timeline__label">Memex 願景</div></div>
+      <div class="timeline__pt"><div class="timeline__dot"></div><div class="timeline__year">1991</div><div class="timeline__label">WWW 誕生</div></div>
+      <div class="timeline__pt"><div class="timeline__dot"></div><div class="timeline__year">2024+</div><div class="timeline__label">LLM Wiki</div></div>
+    </div>
+    <p style="font-size:14px;color:var(--text-muted);margin-top:2.5rem;text-align:center;max-width:480px;line-height:1.7">Bush 的願景比網路更接近 LLM Wiki：私人、主動策展、連結和文件一樣有價值。他無法解決的問題是——誰來做維護？</p>
+  </div>
+</div>
+
+<!-- 12. 如何開始 -->
+<div class="slide" data-s="11">
+  <div class="slide__body">
+    <div class="label" style="text-align:center">第八章 — 實踐指南</div>
+    <div class="title" style="text-align:center">如何開始</div>
+    <div class="inv-steps">
+      <div class="inv-step"><div class="inv-step__ring">1</div><div><h4>選擇領域和工具</h4><p>決定主題、LLM agent、瀏覽器</p></div></div>
+      <div class="inv-step"><div class="inv-step__ring">2</div><div><h4>建立基本結構</h4><p>raw/ 和 wiki/ 目錄，index.md，log.md，git</p></div></div>
+      <div class="inv-step"><div class="inv-step__ring">3</div><div><h4>撰寫 Schema</h4><p>與 LLM 共同建立初版 CLAUDE.md</p></div></div>
+      <div class="inv-step"><div class="inv-step__ring">4</div><div><h4>開始 Ingest</h4><p>從一個來源開始，觀察並調整</p></div></div>
+      <div class="inv-step"><div class="inv-step__ring">5</div><div><h4>定期 Lint</h4><p>每週或每 10 個來源做健康檢查</p></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 13. 心態 -->
+<div class="slide" data-s="12">
+  <div class="slide__body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;max-height:none;text-align:center">
+    <p style="font-family:var(--font-serif);font-size:clamp(22px,3vw,36px);font-weight:300;color:var(--text);line-height:1.4;font-style:italic">你是策展人，不是作者。</p>
+    <p style="font-size:15px;color:var(--text-muted);margin-top:1.5rem;line-height:1.7">你選擇來源和方向，LLM 做記帳。</p>
+    <p style="font-family:var(--font-mono);font-size:11px;color:var(--text-ghost);margin-top:2rem;letter-spacing:.08em">一切都是可選的 — 從最小可行 wiki 開始</p>
+  </div>
+</div>
+
+<!-- 14. Loop -->
+<div class="slide" data-s="13">
+  <div class="loop">
+    <div class="loop__fog"></div>
+    <div class="loop__ring">
+      <p>Wiki 是持久化的<br>編譯產物，<br>不是即時的<br>檢索結果。</p>
+    </div>
+  </div>
+</div>
+
+<!-- 15. Farewell -->
+<div class="slide" data-s="14">
   <div class="farewell">
-    <div class="farewell__line"></div>
-    <p class="farewell__text">LLM Wiki — 完整教學指南</p>
+    <hr>
+    <p>LLM Wiki — 完整教學指南</p>
   </div>
-</section>
 </div>
-
-</div><!-- /slides -->
 
 <script>
 (() => {
   const slides = document.querySelectorAll('.slide');
-  const dots = document.getElementById('slideNav');
-  const counterCurrent = document.getElementById('counterCurrent');
-  const counterTotal = document.getElementById('counterTotal');
-  const keyHint = document.getElementById('keyHint');
-  const totalSlides = slides.length;
-  let current = 0;
-  let transitioning = false;
+  const dotsEl = document.getElementById('dots');
+  const curEl = document.getElementById('cur');
+  const totEl = document.getElementById('tot');
+  const hint = document.getElementById('hint');
+  const N = slides.length;
+  let idx = 0, locked = false;
 
-  counterTotal.textContent = totalSlides;
+  totEl.textContent = N;
 
-  // Build nav dots
-  slides.forEach((_, i) => {
-    const dot = document.createElement('button');
-    dot.className = 'slide-nav__dot' + (i === 0 ? ' active' : '');
-    dot.setAttribute('aria-label', 'Slide ' + (i + 1));
-    dot.addEventListener('click', () => goTo(i));
-    dots.appendChild(dot);
-  });
-  const allDots = dots.querySelectorAll('.slide-nav__dot');
+  // Build dots
+  for (let i = 0; i < N; i++) {
+    const d = document.createElement('button');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => go(i);
+    dotsEl.appendChild(d);
+  }
+  const allDots = dotsEl.querySelectorAll('.dot');
 
-  function goTo(index) {
-    if (index === current || index < 0 || index >= totalSlides || transitioning) return;
-    transitioning = true;
-
-    // Scroll current slide's inner back to top
-    const currentInner = slides[current].querySelector('.slide__inner') || slides[current];
-    if (currentInner.scrollTop) currentInner.scrollTop = 0;
-    slides[current].scrollTop = 0;
-
-    slides[current].classList.remove('active');
-    slides[index].classList.add('active');
-
-    allDots[current].classList.remove('active');
-    allDots[index].classList.add('active');
-
-    current = index;
-    counterCurrent.textContent = current + 1;
-
-    // Hero visibility
-    if (current === 0) {
-      document.querySelector('.hero').classList.add('visible');
-    }
-
-    setTimeout(() => { transitioning = false; }, 500);
+  function go(n) {
+    if (n === idx || n < 0 || n >= N || locked) return;
+    locked = true;
+    slides[idx].classList.remove('active');
+    allDots[idx].classList.remove('active');
+    idx = n;
+    slides[idx].classList.add('active');
+    allDots[idx].classList.add('active');
+    curEl.textContent = idx + 1;
+    setTimeout(() => { locked = false; }, 400);
   }
 
-  function next() { goTo(current + 1); }
-  function prev() { goTo(current - 1); }
-
-  // Keyboard navigation
-  document.addEventListener('keydown', (e) => {
-    if (keyHint) keyHint.classList.add('hidden');
-    if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
-      e.preventDefault();
-      // If slide is scrollable and not at bottom, let it scroll internally first
-      const slide = slides[current];
-      if (slide.scrollHeight > slide.clientHeight + 10) {
-        const atBottom = slide.scrollTop + slide.clientHeight >= slide.scrollHeight - 10;
-        if (!atBottom) {
-          slide.scrollBy({ top: window.innerHeight * 0.7, behavior: 'smooth' });
-          return;
-        }
-      }
-      next();
-    }
-    if (e.key === 'ArrowUp' || e.key === 'PageUp') {
-      e.preventDefault();
-      const slide = slides[current];
-      if (slide.scrollTop > 10) {
-        slide.scrollBy({ top: -window.innerHeight * 0.7, behavior: 'smooth' });
-        return;
-      }
-      prev();
-    }
-    if (e.key === 'Home') { e.preventDefault(); goTo(0); }
-    if (e.key === 'End') { e.preventDefault(); goTo(totalSlides - 1); }
+  // Keyboard
+  document.addEventListener('keydown', e => {
+    if (hint) hint.style.opacity = '0';
+    if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); go(idx + 1); }
+    if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); go(idx - 1); }
+    if (e.key === 'Home') { e.preventDefault(); go(0); }
+    if (e.key === 'End') { e.preventDefault(); go(N - 1); }
   });
 
-  // Mouse wheel navigation
-  let wheelCooldown = false;
-  document.addEventListener('wheel', (e) => {
-    if (wheelCooldown) return;
-
-    const slide = slides[current];
-    const isScrollable = slide.scrollHeight > slide.clientHeight + 10;
-
-    if (isScrollable) {
-      const atTop = slide.scrollTop <= 5;
-      const atBottom = slide.scrollTop + slide.clientHeight >= slide.scrollHeight - 5;
-      // Let the slide scroll internally unless at boundary
-      if (e.deltaY > 0 && !atBottom) return;
-      if (e.deltaY < 0 && !atTop) return;
-    }
-
-    wheelCooldown = true;
-    if (e.deltaY > 0) next();
-    else if (e.deltaY < 0) prev();
-    setTimeout(() => { wheelCooldown = false; }, 800);
+  // Wheel
+  let wt = 0;
+  document.addEventListener('wheel', e => {
+    const now = Date.now();
+    if (now - wt < 600) return;
+    wt = now;
+    if (e.deltaY > 0) go(idx + 1);
+    else if (e.deltaY < 0) go(idx - 1);
   }, { passive: true });
 
-  // Touch navigation
-  let touchStartY = 0;
-  document.addEventListener('touchstart', (e) => {
-    touchStartY = e.touches[0].clientY;
+  // Touch
+  let ty = 0;
+  document.addEventListener('touchstart', e => { ty = e.touches[0].clientY; }, { passive: true });
+  document.addEventListener('touchend', e => {
+    const d = ty - e.changedTouches[0].clientY;
+    if (d > 50) go(idx + 1);
+    else if (d < -50) go(idx - 1);
   }, { passive: true });
-
-  document.addEventListener('touchend', (e) => {
-    const diff = touchStartY - e.changedTouches[0].clientY;
-    const slide = slides[current];
-    const isScrollable = slide.scrollHeight > slide.clientHeight + 10;
-
-    if (Math.abs(diff) < 50) return; // too small
-
-    if (isScrollable) {
-      const atTop = slide.scrollTop <= 5;
-      const atBottom = slide.scrollTop + slide.clientHeight >= slide.scrollHeight - 5;
-      if (diff > 0 && !atBottom) return;
-      if (diff < 0 && !atTop) return;
-    }
-
-    if (diff > 50) next();
-    else if (diff < -50) prev();
-  }, { passive: true });
-
-  // Hero visible on load
-  window.addEventListener('load', () => {
-    document.querySelector('.hero').classList.add('visible');
-  });
 
   // Hero fog parallax
-  const heroFogLayers = document.querySelectorAll('.hero__fog-layer');
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (!prefersReducedMotion) {
-    let mx = 0, my = 0, fogTicking = false;
-    document.addEventListener('mousemove', (e) => {
-      mx = (e.clientX / window.innerWidth - 0.5) * 2;
-      my = (e.clientY / window.innerHeight - 0.5) * 2;
-      if (!fogTicking) {
-        fogTicking = true;
-        requestAnimationFrame(() => {
-          heroFogLayers.forEach((layer, i) => {
-            const depth = (i + 1) * 12;
-            layer.style.transform = `translate(calc(-50% + ${mx * depth}px), ${my * depth}px)`;
-          });
-          fogTicking = false;
-        });
-      }
+  const fogs = document.querySelectorAll('.hero__fog');
+  if (!window.matchMedia('(prefers-reduced-motion:reduce)').matches) {
+    document.addEventListener('mousemove', e => {
+      const x = (e.clientX / innerWidth - .5) * 2;
+      const y = (e.clientY / innerHeight - .5) * 2;
+      fogs.forEach((f, i) => {
+        const d = (i + 1) * 12;
+        f.style.transform = `translate(calc(-50% + ${x*d}px), ${y*d}px)`;
+      });
     });
   }
 })();
 </script>
-
 </body>
 </html>
